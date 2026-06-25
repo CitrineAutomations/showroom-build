@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Division PR — CRM Design Brief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg:       #0A0A0A;
+      --surface:  #F2EAD3;
+      --surface2: #1a1a1a;
+      --surface3: #111111;
+      --white:    #FFFFFF;
+      --text:     #FFFFFF;
+      --text-sec: #A1A1AA;
+      --border:   #27272A;
+      --cream:    #F2EAD3;
+      --cream-dim: rgba(242,234,211,0.08);
+      --cream-border: rgba(242,234,211,0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.08s; }
+    .reveal-delay-2 { transition-delay: 0.16s; }
+    .reveal-delay-3 { transition-delay: 0.24s; }
+    .reveal-delay-4 { transition-delay: 0.32s; }
+
+    /* ── COVER ── */
+    .cover {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 80px 72px;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .cover-ambient {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .cover-ambient svg { width: 100%; height: 100%; }
+
+    .cover-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-sec);
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .cover-meta::before {
+      content: '';
+      display: block;
+      width: 32px;
+      height: 1px;
+      background: var(--cream);
+      opacity: 0.4;
+    }
+
+    .cover-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(56px, 8vw, 96px);
+      font-weight: 500;
+      line-height: 1.0;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .cover-title .cream { color: var(--cream); }
+
+    .cover-subtitle {
+      font-family: 'Inter', sans-serif;
+      font-style: normal;
+      font-size: 18px;
+      font-weight: 300;
+      color: var(--text-sec);
+      margin-bottom: 64px;
+    }
+
+    .cover-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+    .cover-footer-left {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-sec);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .cover-toc {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .cover-toc li {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-sec);
+    }
+    .cover-toc li span {
+      color: var(--cream);
+      margin-right: 8px;
+      opacity: 0.6;
+    }
+    .draft-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      border: 1px solid var(--cream-border);
+      color: var(--cream);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      opacity: 0.7;
+    }
+
+    /* ── SECTIONS ── */
+    section {
+      padding: 96px 72px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .section-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--cream);
+      opacity: 0.7;
+    }
+    .section-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 4vw, 52px);
+      font-weight: 500;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      margin-bottom: 48px;
+    }
+    .section-title em {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      color: var(--cream);
+    }
+
+    /* ── JOURNEY ── */
+    .journey-wrap {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px;
+      overflow-x: auto;
+    }
+    .mermaid { display: flex; justify-content: center; }
+
+    /* ── USER BENTO ── */
+    .user-bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 16px;
+    }
+    .user-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px;
+      transition: border-color 0.3s ease, transform 0.3s cubic-bezier(0.22,1,0.36,1);
+      position: relative;
+      overflow: hidden;
+    }
+    .user-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 80% 20%, rgba(242,234,211,0.04) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .user-card:hover {
+      border-color: var(--cream-border);
+      transform: translateY(-2px);
+    }
+    .user-card.span-2 { grid-column: span 2; }
+    .user-card.external {
+      background: transparent;
+      border-style: dashed;
+      border-color: #333;
+    }
+    .user-icon {
+      font-size: 32px;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .user-role-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--cream);
+      opacity: 0.6;
+      margin-bottom: 8px;
+    }
+    .user-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+    .user-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-sec);
+      line-height: 1.7;
+    }
+    .user-perms {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .perm-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--text-sec);
+      padding: 3px 10px;
+      border-radius: 9999px;
+    }
+    .perm-tag.highlight {
+      background: var(--cream-dim);
+      border-color: var(--cream-border);
+      color: var(--cream);
+    }
+
+    /* ── PIPELINE ── */
+    .pipeline-group {
+      margin-bottom: 40px;
+    }
+    .pipeline-group-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-sec);
+      margin-bottom: 12px;
+    }
+    .pipeline-stages {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .stage {
+      flex: 1;
+      min-width: 160px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 22px;
+      transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), border-color 0.25s;
+    }
+    .stage:hover {
+      transform: translateY(-2px);
+      border-color: #3a3a3a;
+    }
+    .stage.automated {
+      background: var(--cream-dim);
+      border-color: var(--cream-border);
+    }
+    .stage-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--cream);
+      margin-bottom: 10px;
+      display: block;
+    }
+    .stage-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--white);
+      margin-bottom: 6px;
+    }
+    .stage-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-sec);
+      line-height: 1.6;
+    }
+    .pipeline-connector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 16px 0;
+    }
+    .pipeline-connector-line {
+      width: 32px;
+      height: 1px;
+      background: var(--border);
+    }
+    .pipeline-connector-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #444;
+    }
+
+    /* ── OBJECT MODEL ── */
+    .object-bento {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .object-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), border-color 0.3s;
+    }
+    .object-card:hover {
+      transform: translateY(-3px);
+      border-color: #333;
+    }
+    .object-card-head {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .object-card-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--white);
+    }
+    .object-card-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--cream);
+      opacity: 0.5;
+      letter-spacing: 0.1em;
+    }
+    .object-fields {
+      padding: 16px 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(39,39,42,0.6);
+    }
+    .field-row:last-child { border-bottom: none; }
+    .field-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-sec);
+    }
+    .field-type {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #444;
+    }
+    .field-type.link {
+      color: var(--cream);
+      opacity: 0.7;
+    }
+
+    /* ── RELATIONSHIPS ── */
+    .rel-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .rel-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 20px;
+      transition: border-color 0.25s;
+    }
+    .rel-row:hover { border-color: #333; }
+    .rel-node {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--cream);
+    }
+    .rel-arrow {
+      color: #444;
+      font-size: 14px;
+    }
+    .rel-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-sec);
+      margin-left: auto;
+    }
+
+    /* ── AUTOMATIONS ── */
+    .auto-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .auto-row {
+      display: grid;
+      grid-template-columns: 1fr 48px 1fr;
+      align-items: center;
+      gap: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.25s, transform 0.25s cubic-bezier(0.22,1,0.36,1);
+    }
+    .auto-row:hover {
+      border-color: #333;
+      transform: translateY(-1px);
+    }
+    .auto-trigger, .auto-actions {
+      padding: 20px 24px;
+    }
+    .auto-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .auto-trigger .auto-label { color: var(--text-sec); }
+    .auto-actions .auto-label { color: var(--cream); opacity: 0.7; }
+    .auto-trigger p {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--white);
+      line-height: 1.5;
+    }
+    .auto-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      height: 100%;
+      background: var(--cream-dim);
+    }
+    .auto-divider span {
+      font-size: 16px;
+      color: var(--cream);
+      opacity: 0.7;
+    }
+    .auto-actions ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .auto-actions ul li {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-sec);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .auto-actions ul li::before {
+      content: '→';
+      color: var(--cream);
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      padding: 48px 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--white);
+    }
+    .footer-brand span { color: var(--cream); }
+    .footer-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-sec);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 900px) {
+      section { padding: 64px 32px; }
+      .cover { padding: 64px 32px; }
+      .user-bento { grid-template-columns: 1fr 1fr; }
+      .user-card.span-2 { grid-column: span 1; }
+      .object-bento { grid-template-columns: 1fr 1fr; }
+      .footer { padding: 40px 32px; flex-direction: column; gap: 16px; align-items: flex-start; }
+      .cover-toc { display: none; }
+    }
+    @media (max-width: 600px) {
+      section { padding: 48px 20px; }
+      .cover { padding: 48px 20px; }
+      .user-bento, .object-bento { grid-template-columns: 1fr; }
+      .auto-row { grid-template-columns: 1fr; }
+      .auto-divider { height: 40px; border: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── COVER ── -->
+<div class="cover">
+  <div class="cover-ambient">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="rg1" cx="80%" cy="20%" r="60%">
+          <stop offset="0%" stop-color="#F2EAD3" stop-opacity="0.04"/>
+          <stop offset="100%" stop-color="#F2EAD3" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="rg2" cx="10%" cy="80%" r="50%">
+          <stop offset="0%" stop-color="#F2EAD3" stop-opacity="0.025"/>
+          <stop offset="100%" stop-color="#F2EAD3" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1440" height="900" fill="url(#rg1)"/>
+      <rect width="1440" height="900" fill="url(#rg2)"/>
+      <!-- grid lines -->
+      <line x1="0" y1="300" x2="1440" y2="300" stroke="#F2EAD3" stroke-opacity="0.03" stroke-width="1"/>
+      <line x1="0" y1="600" x2="1440" y2="600" stroke="#F2EAD3" stroke-opacity="0.03" stroke-width="1"/>
+      <line x1="480" y1="0" x2="480" y2="900" stroke="#F2EAD3" stroke-opacity="0.03" stroke-width="1"/>
+      <line x1="960" y1="0" x2="960" y2="900" stroke="#F2EAD3" stroke-opacity="0.03" stroke-width="1"/>
+      <!-- corner mark -->
+      <rect x="1360" y="20" width="60" height="60" fill="none" stroke="#F2EAD3" stroke-opacity="0.08" stroke-width="1"/>
+      <rect x="1370" y="30" width="40" height="40" fill="none" stroke="#F2EAD3" stroke-opacity="0.05" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <div class="cover-meta reveal">Division PR &nbsp;/&nbsp; Los Angeles &nbsp;/&nbsp; Showroom CRM</div>
+  <h1 class="cover-title reveal reveal-delay-1">
+    DIVISION<br><span class="cream">PR</span>
+  </h1>
+  <p class="cover-subtitle reveal reveal-delay-2">CRM Architecture &amp; Workflow Design</p>
+
+  <div class="cover-footer reveal reveal-delay-3">
+    <div class="cover-footer-left">June 2026 &nbsp;·&nbsp; Draft for Review</div>
+    <ul class="cover-toc">
+      <li><span>01</span>Customer Journey</li>
+      <li><span>02</span>Users</li>
+      <li><span>03</span>Pipeline</li>
+      <li><span>04</span>Object Model</li>
+      <li><span>05</span>Automations</li>
+    </ul>
+    <div class="draft-chip">Draft — Present &amp; Adjust</div>
+  </div>
+</div>
+
+<!-- ── 01 CUSTOMER JOURNEY ── -->
+<section id="journey">
+  <div class="section-eyebrow reveal">
+    <span class="section-num">01</span>
+    <div class="section-rule"></div>
+  </div>
+  <h2 class="section-title reveal reveal-delay-1">Customer<br><em>Journey</em></h2>
+
+  <div class="journey-wrap reveal reveal-delay-2">
+    <div class="mermaid">
+flowchart TD
+    A([Client reaches out\nEmail · DM · Phone]) --> B
+
+    subgraph REL ["  RELATIONSHIP"]
+      B[Contact record created\nor located in CRM]
+      B --> C[Rep qualifies client\nType · Agency · Project]
+    end
+
+    subgraph APT ["  APPOINTMENT"]
+      C --> D[Client requests appointment]
+      D --> E[Rep manually books\nDate · Time · Rep assigned]
+      E --> F[Confirmation sent to client\nCalendar event created]
+      F --> G[Day-before reminder fires]
+      G --> H[Rep receives morning brief\nClient pull history + preferences]
+      H --> I[Client arrives at showroom]
+      I --> J[Items selected during visit\nPull finalized on the spot]
+    end
+
+    subgraph PULL ["  PULL ACTIVE"]
+      J --> K[Items logged out\nReturn date set]
+      K --> L[Google Calendar return\nevent created]
+      L --> M{Return\ndate status}
+      M -->|On track| N[24hr reminder\nsent to client]
+      M -->|Approaching| O[Stage → DUE SOON\nAutomated]
+      M -->|Passed| P[Stage → OVERDUE\nEscalation triggered]
+    end
+
+    subgraph RET ["  RETURN"]
+      N --> Q[Items received back]
+      O --> Q
+      P --> Q
+      Q --> R[Condition check\nInventory updated]
+    end
+
+    subgraph CLS ["  CLOSED"]
+      R --> S[Coverage tracked\nEvent · Platform · Credit]
+      S --> T[Client record updated\nReliability score refreshed]
+      T --> U([Pull closed])
+    end
+
+    style REL fill:#141414,stroke:#27272A,color:#A1A1AA
+    style APT fill:#141414,stroke:#27272A,color:#A1A1AA
+    style PULL fill:#141414,stroke:#27272A,color:#A1A1AA
+    style RET fill:#141414,stroke:#27272A,color:#A1A1AA
+    style CLS fill:#1a1910,stroke:#4a4535,color:#F2EAD3
+    </div>
+  </div>
+</section>
+
+<!-- ── 02 USERS ── -->
+<section id="users">
+  <div class="section-eyebrow reveal">
+    <span class="section-num">02</span>
+    <div class="section-rule"></div>
+  </div>
+  <h2 class="section-title reveal reveal-delay-1"><em>Users</em><br>&amp; Permissions</h2>
+
+  <div class="user-bento">
+
+    <div class="user-card span-2 reveal reveal-delay-1">
+      <span class="user-icon">👑</span>
+      <div class="user-role-tag">Internal · Full Access</div>
+      <div class="user-name">Owner / Director</div>
+      <div class="user-desc">Runs the showroom. Full visibility across all pulls, clients, and coverage outcomes. Reviews business performance and relationship value over time.</div>
+      <div class="user-perms">
+        <span class="perm-tag highlight">All Records</span>
+        <span class="perm-tag highlight">Reports</span>
+        <span class="perm-tag highlight">Coverage Data</span>
+        <span class="perm-tag highlight">Permissions</span>
+      </div>
+    </div>
+
+    <div class="user-card reveal reveal-delay-2">
+      <span class="user-icon">🧑‍💼</span>
+      <div class="user-role-tag">Internal · Operational</div>
+      <div class="user-name">Showroom Rep</div>
+      <div class="user-desc">Day-to-day operations. Books appointments, manages pulls, communicates with clients, approves and closes records.</div>
+      <div class="user-perms">
+        <span class="perm-tag">Contacts</span>
+        <span class="perm-tag">Appointments</span>
+        <span class="perm-tag">Pulls</span>
+        <span class="perm-tag">Inventory</span>
+      </div>
+    </div>
+
+    <div class="user-card reveal reveal-delay-3">
+      <span class="user-icon">🎓</span>
+      <div class="user-role-tag">Internal · Limited</div>
+      <div class="user-name">Intern ×2</div>
+      <div class="user-desc">Supporting tasks only. Pull prep, return logging, reminder sending. No client contact info visible. Cannot approve or close pulls.</div>
+      <div class="user-perms">
+        <span class="perm-tag">Pull Prep</span>
+        <span class="perm-tag">Returns</span>
+        <span class="perm-tag">Reminders</span>
+      </div>
+    </div>
+
+    <div class="user-card external reveal reveal-delay-4" style="grid-column: 1 / -1;">
+      <span class="user-icon">🎨</span>
+      <div class="user-role-tag">External · Touchpoint Only</div>
+      <div class="user-name">Client — Stylist / Editor / Art Director</div>
+      <div class="user-desc">Reaches out via email, DM, or phone. Does not log into the CRM. All intake is handled manually by the rep on their behalf. Their journey is tracked, not their access.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── 03 PIPELINE ── -->
+<section id="pipeline">
+  <div class="section-eyebrow reveal">
+    <span class="section-num">03</span>
+    <div class="section-rule"></div>
+  </div>
+  <h2 class="section-title reveal reveal-delay-1">Pipeline<br><em>Stages</em></h2>
+
+  <div class="pipeline-group reveal reveal-delay-2">
+    <div class="pipeline-group-label">Appointment Track</div>
+    <div class="pipeline-stages">
+      <div class="stage">
+        <span class="stage-tag">Stage 01</span>
+        <div class="stage-name">Appointment Requested</div>
+        <div class="stage-desc">Client reaches out. Rep creates record manually in CRM.</div>
+      </div>
+      <div class="stage">
+        <span class="stage-tag">Stage 02</span>
+        <div class="stage-name">Appointment Confirmed</div>
+        <div class="stage-desc">Date, time, rep assigned. Confirmation sent. Calendar event created.</div>
+      </div>
+      <div class="stage">
+        <span class="stage-tag">Stage 03</span>
+        <div class="stage-name">Visited</div>
+        <div class="stage-desc">Appointment completed. Pull finalized during the showroom visit.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-connector reveal">
+    <div class="pipeline-connector-line"></div>
+    <div class="pipeline-connector-text">Pull begins</div>
+  </div>
+
+  <div class="pipeline-group reveal">
+    <div class="pipeline-group-label">Pull Track</div>
+    <div class="pipeline-stages">
+      <div class="stage">
+        <span class="stage-tag">Stage 04</span>
+        <div class="stage-name">Out</div>
+        <div class="stage-desc">Items have left the showroom. Return date set. Calendar event created and Event ID stored.</div>
+      </div>
+      <div class="stage automated">
+        <span class="stage-tag">Stage 05 · Automated</span>
+        <div class="stage-name">Due Soon</div>
+        <div class="stage-desc">Return date within threshold. Reminder fires to client and rep automatically.</div>
+      </div>
+      <div class="stage automated">
+        <span class="stage-tag">Stage 06 · Automated</span>
+        <div class="stage-name">Overdue</div>
+        <div class="stage-desc">Past return date with no return logged. Escalation sent to rep and owner.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline-connector reveal">
+    <div class="pipeline-connector-line"></div>
+    <div class="pipeline-connector-text">Items return</div>
+  </div>
+
+  <div class="pipeline-group reveal">
+    <div class="pipeline-group-label">Close Track</div>
+    <div class="pipeline-stages">
+      <div class="stage">
+        <span class="stage-tag">Stage 07</span>
+        <div class="stage-name">Returned</div>
+        <div class="stage-desc">Items received back. Condition checked. Inventory status reset to available.</div>
+      </div>
+      <div class="stage">
+        <span class="stage-tag">Stage 08</span>
+        <div class="stage-name">Closed</div>
+        <div class="stage-desc">Coverage logged — event name, platform, credit given. Client reliability score updated.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 04 OBJECT MODEL ── -->
+<section id="objects">
+  <div class="section-eyebrow reveal">
+    <span class="section-num">04</span>
+    <div class="section-rule"></div>
+  </div>
+  <h2 class="section-title reveal reveal-delay-1">Object<br><em>Model</em></h2>
+
+  <div class="object-bento">
+
+    <div class="object-card reveal reveal-delay-1">
+      <div class="object-card-head">
+        <div class="object-card-name">Contact</div>
+        <div class="object-card-num">① </div>
+      </div>
+      <div class="object-fields">
+        <div class="field-row"><span class="field-name">name</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">agency</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">client_type</span><span class="field-type">select</span></div>
+        <div class="field-row"><span class="field-name">email</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">phone</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">instagram</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">pull_history</span><span class="field-type link">→ Pull</span></div>
+        <div class="field-row"><span class="field-name">reliability_score</span><span class="field-type">formula</span></div>
+        <div class="field-row"><span class="field-name">notes</span><span class="field-type">long text</span></div>
+      </div>
+    </div>
+
+    <div class="object-card reveal reveal-delay-2">
+      <div class="object-card-head">
+        <div class="object-card-name">Appointment</div>
+        <div class="object-card-num">② </div>
+      </div>
+      <div class="object-fields">
+        <div class="field-row"><span class="field-name">client</span><span class="field-type link">→ Contact</span></div>
+        <div class="field-row"><span class="field-name">date_time</span><span class="field-type">datetime</span></div>
+        <div class="field-row"><span class="field-name">rep_assigned</span><span class="field-type">user</span></div>
+        <div class="field-row"><span class="field-name">status</span><span class="field-type">select</span></div>
+        <div class="field-row"><span class="field-name">looking_for</span><span class="field-type">long text</span></div>
+        <div class="field-row"><span class="field-name">pull</span><span class="field-type link">→ Pull</span></div>
+        <div class="field-row"><span class="field-name">calendar_event_id</span><span class="field-type">text</span></div>
+      </div>
+    </div>
+
+    <div class="object-card reveal reveal-delay-3">
+      <div class="object-card-head">
+        <div class="object-card-name">Pull</div>
+        <div class="object-card-num">③ </div>
+      </div>
+      <div class="object-fields">
+        <div class="field-row"><span class="field-name">client</span><span class="field-type link">→ Contact</span></div>
+        <div class="field-row"><span class="field-name">appointment</span><span class="field-type link">→ Appointment</span></div>
+        <div class="field-row"><span class="field-name">items</span><span class="field-type link">→ Inventory</span></div>
+        <div class="field-row"><span class="field-name">return_date</span><span class="field-type">date</span></div>
+        <div class="field-row"><span class="field-name">stage</span><span class="field-type">select</span></div>
+        <div class="field-row"><span class="field-name">calendar_event_id</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">coverage_event</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">coverage_platform</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">credit_given</span><span class="field-type">checkbox</span></div>
+      </div>
+    </div>
+
+    <div class="object-card reveal reveal-delay-4">
+      <div class="object-card-head">
+        <div class="object-card-name">Inventory Item</div>
+        <div class="object-card-num">④ </div>
+      </div>
+      <div class="object-fields">
+        <div class="field-row"><span class="field-name">designer</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">item_type</span><span class="field-type">select</span></div>
+        <div class="field-row"><span class="field-name">color</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">season</span><span class="field-type">select</span></div>
+        <div class="field-row"><span class="field-name">item_id</span><span class="field-type">text</span></div>
+        <div class="field-row"><span class="field-name">photo</span><span class="field-type">attachment</span></div>
+        <div class="field-row"><span class="field-name">status</span><span class="field-type">select</span></div>
+        <div class="field-row"><span class="field-name">active_pull</span><span class="field-type link">→ Pull</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-eyebrow reveal" style="margin-bottom: 16px; margin-top: 8px;">
+    <span class="section-num" style="opacity:0.4; font-size:10px;">Relationships</span>
+    <div class="section-rule"></div>
+  </div>
+  <div class="rel-list">
+    <div class="rel-row reveal">
+      <span class="rel-node">Contact</span>
+      <span class="rel-arrow">→</span>
+      <span class="rel-node" style="color:var(--white); opacity:0.7">Appointment</span>
+      <span class="rel-desc">One contact, many appointments over time</span>
+    </div>
+    <div class="rel-row reveal reveal-delay-1">
+      <span class="rel-node">Appointment</span>
+      <span class="rel-arrow">→</span>
+      <span class="rel-node" style="color:var(--white); opacity:0.7">Pull</span>
+      <span class="rel-desc">One appointment produces one pull</span>
+    </div>
+    <div class="rel-row reveal reveal-delay-2">
+      <span class="rel-node">Pull</span>
+      <span class="rel-arrow">→</span>
+      <span class="rel-node" style="color:var(--white); opacity:0.7">Inventory Item</span>
+      <span class="rel-desc">One pull contains many items</span>
+    </div>
+    <div class="rel-row reveal reveal-delay-3">
+      <span class="rel-node">Inventory Item</span>
+      <span class="rel-arrow">→</span>
+      <span class="rel-node" style="color:var(--white); opacity:0.7">Pull</span>
+      <span class="rel-desc">Item locked to one active pull at a time</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── 05 AUTOMATIONS ── -->
+<section id="automations">
+  <div class="section-eyebrow reveal">
+    <span class="section-num">05</span>
+    <div class="section-rule"></div>
+  </div>
+  <h2 class="section-title reveal reveal-delay-1">n8n<br><em>Automations</em></h2>
+
+  <div class="auto-list">
+
+    <div class="auto-row reveal">
+      <div class="auto-trigger">
+        <div class="auto-label">Trigger</div>
+        <p>Appointment confirmed in CRM</p>
+      </div>
+      <div class="auto-divider"><span>⚡</span></div>
+      <div class="auto-actions">
+        <div class="auto-label">Actions</div>
+        <ul>
+          <li>Send confirmation email to client</li>
+          <li>Create Google Calendar appointment event</li>
+          <li>Schedule day-before reminder to client</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="auto-row reveal reveal-delay-1">
+      <div class="auto-trigger">
+        <div class="auto-label">Trigger</div>
+        <p>Morning of appointment day</p>
+      </div>
+      <div class="auto-divider"><span>⚡</span></div>
+      <div class="auto-actions">
+        <div class="auto-label">Actions</div>
+        <ul>
+          <li>Send rep brief: client name, pull history, preferences</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="auto-row reveal reveal-delay-2">
+      <div class="auto-trigger">
+        <div class="auto-label">Trigger</div>
+        <p>Pull stage set to <strong style="color:var(--white)">Out</strong></p>
+      </div>
+      <div class="auto-divider"><span>⚡</span></div>
+      <div class="auto-actions">
+        <div class="auto-label">Actions</div>
+        <ul>
+          <li>Create Google Calendar return event</li>
+          <li>Write Calendar Event ID back to Pull record</li>
+          <li>Set all linked inventory items to: Out</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="auto-row reveal reveal-delay-3">
+      <div class="auto-trigger">
+        <div class="auto-label">Trigger</div>
+        <p>Return date updated on Pull record</p>
+      </div>
+      <div class="auto-divider"><span>⚡</span></div>
+      <div class="auto-actions">
+        <div class="auto-label">Actions</div>
+        <ul>
+          <li>Patch existing Calendar event using stored Event ID</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="auto-row reveal">
+      <div class="auto-trigger">
+        <div class="auto-label">Trigger</div>
+        <p>Daily check — return date within 2 days</p>
+      </div>
+      <div class="auto-divider"><span>⚡</span></div>
+      <div class="auto-actions">
+        <div class="auto-label">Actions</div>
+        <ul>
+          <li>Move Pull stage → Due Soon</li>
+          <li>Send return reminder to client</li>
+          <li>Notify rep</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="auto-row reveal reveal-delay-1">
+      <div class="auto-trigger">
+        <div class="auto-label">Trigger</div>
+        <p>Daily check — return date passed, no return logged</p>
+      </div>
+      <div class="auto-divider"><span>⚡</span></div>
+      <div class="auto-actions">
+        <div class="auto-label">Actions</div>
+        <ul>
+          <li>Move Pull stage → Overdue</li>
+          <li>Send escalation to rep and owner</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="auto-row reveal reveal-delay-2">
+      <div class="auto-trigger">
+        <div class="auto-label">Trigger</div>
+        <p>Pull stage set to <strong style="color:var(--white)">Returned</strong></p>
+      </div>
+      <div class="auto-divider"><span>⚡</span></div>
+      <div class="auto-actions">
+        <div class="auto-label">Actions</div>
+        <ul>
+          <li>Reset linked inventory items to: Available</li>
+          <li>Remove Google Calendar return event</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<div class="footer reveal">
+  <div class="footer-brand">Division <span>PR</span></div>
+  <div class="footer-meta">CRM Design Brief &nbsp;·&nbsp; June 2026 &nbsp;·&nbsp; Draft</div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1a1a1a',
+      primaryTextColor: '#A1A1AA',
+      primaryBorderColor: '#27272A',
+      lineColor: '#F2EAD3',
+      secondaryColor: '#141414',
+      tertiaryColor: '#1a1910',
+      tertiaryTextColor: '#F2EAD3',
+      edgeLabelBackground: '#111',
+      clusterBkg: '#141414',
+      clusterBorder: '#27272A',
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: '13px',
+    },
+    flowchart: { curve: 'basis', padding: 24 }
+  });
+
+  // scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
