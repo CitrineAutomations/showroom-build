@@ -628,6 +628,10 @@
       border-left: 1px solid var(--cream-border);
       border-right: 1px solid var(--cream-border);
     }
+    .crm-table thead th.crm-recommended,
+    .crm-table tbody td.crm-recommended:first-of-type {
+      border-top: 2px solid var(--cream);
+    }
     .crm-table thead th.crm-recommended {
       border-top: 2px solid var(--cream);
     }
@@ -636,6 +640,239 @@
       font-weight: 500;
     }
     .crm-no { color: #555; }
+
+    /* ── RAG SECTION ── */
+    .rag-intro {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 16px;
+      font-weight: 300;
+      color: var(--text-sec);
+      max-width: 700px;
+      margin-bottom: 48px;
+      line-height: 1.75;
+    }
+    .rag-block {
+      margin-bottom: 56px;
+    }
+    .rag-block-label {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--cream);
+      opacity: 0.7;
+      margin-bottom: 12px;
+    }
+    .rag-block-desc {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-sec);
+      margin-bottom: 24px;
+      line-height: 1.7;
+      max-width: 680px;
+    }
+
+    /* Naming formula */
+    .naming-formula {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 2px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .nf-token {
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-size: 12px;
+    }
+    .nf-token.designer { background: rgba(168,85,247,0.15); color: #c084fc; }
+    .nf-token.type     { background: rgba(59,130,246,0.15); color: #93c5fd; }
+    .nf-token.color    { background: rgba(234,179,8,0.15);  color: #fde047; }
+    .nf-token.season   { background: rgba(34,197,94,0.15);  color: #86efac; }
+    .nf-token.year     { background: rgba(249,115,22,0.15); color: #fdba74; }
+    .nf-token.id       { background: rgba(242,234,211,0.12); color: var(--cream); }
+    .nf-sep  { color: #444; font-size: 16px; }
+    .nf-ext  { color: #444; font-size: 13px; }
+
+    .naming-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .nl-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+    }
+    .nl-swatch {
+      width: 10px; height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .nl-swatch.designer { background: #c084fc; }
+    .nl-swatch.type     { background: #93c5fd; }
+    .nl-swatch.color    { background: #fde047; }
+    .nl-swatch.season   { background: #86efac; }
+    .nl-swatch.year     { background: #fdba74; }
+    .nl-swatch.id       { background: var(--cream); }
+    .nl-label { font-weight: 600; color: var(--white); width: 80px; flex-shrink: 0; }
+    .nl-ex    { color: var(--text-sec); font-weight: 300; }
+
+    .naming-examples {
+      background: #0d0d0d;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .naming-ex-label {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #444;
+      margin-bottom: 12px;
+    }
+    .naming-ex-row { margin-bottom: 8px; }
+    .naming-ex-row:last-child { margin-bottom: 0; }
+    .nex {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--cream);
+      letter-spacing: 0.01em;
+    }
+
+    /* RAG pipeline */
+    .rag-pipeline {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .rp-step {
+      flex: 1;
+      min-width: 140px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+    }
+    .rp-step.highlight-step {
+      background: var(--cream-dim);
+      border-color: var(--cream-border);
+    }
+    .rp-icon { font-size: 24px; margin-bottom: 10px; }
+    .rp-name {
+      font-family: 'Phudu', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .rp-desc {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-sec);
+      line-height: 1.55;
+    }
+    .rp-arrow {
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      color: #333;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    /* Query cards */
+    .query-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    .query-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      transition: border-color 0.25s, transform 0.25s cubic-bezier(0.22,1,0.36,1);
+    }
+    .query-card:hover {
+      border-color: var(--cream-border);
+      transform: translateY(-2px);
+    }
+    .query-q {
+      font-family: 'Phudu', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--cream);
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    .query-a {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-sec);
+      line-height: 1.6;
+    }
+
+    /* Stack */
+    .stack-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .stack-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      align-items: center;
+      gap: 0;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.25s;
+    }
+    .stack-row:hover { border-color: #333; }
+    .stack-row.highlight-row {
+      background: var(--cream-dim);
+      border-color: var(--cream-border);
+    }
+    .stack-tool {
+      font-family: 'Phudu', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--white);
+      padding: 14px 20px;
+      border-right: 1px solid var(--border);
+    }
+    .highlight-row .stack-tool { color: var(--cream); }
+    .stack-role {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-sec);
+      padding: 14px 20px;
+    }
 
     @media (max-width: 900px) {
       section { padding: 64px 32px; }
@@ -1023,13 +1260,13 @@ flowchart TD
       <thead>
         <tr>
           <th class="crm-feature-col"></th>
-          <th>
-            <div class="crm-th-name">Twenty</div>
-            <div class="crm-th-tag">Open Source</div>
-          </th>
           <th class="crm-recommended">
-            <div class="crm-th-name">Airtable</div>
+            <div class="crm-th-name">Twenty</div>
             <div class="crm-th-tag recommended-tag">Recommended</div>
+          </th>
+          <th>
+            <div class="crm-th-name">Airtable</div>
+            <div class="crm-th-tag">Spreadsheet CRM</div>
           </th>
           <th>
             <div class="crm-th-name">GoHighLevel</div>
@@ -1040,74 +1277,74 @@ flowchart TD
       <tbody>
         <tr>
           <td class="crm-feature">Pricing (3 users)</td>
-          <td>$27/mo</td>
-          <td class="crm-recommended">$60/mo</td>
+          <td class="crm-recommended">$27/mo</td>
+          <td>$60/mo</td>
           <td>$97/mo (flat)</td>
         </tr>
         <tr>
           <td class="crm-feature">Annual cost</td>
-          <td>~$324/yr</td>
-          <td class="crm-recommended">~$720/yr</td>
+          <td class="crm-recommended">~$324/yr</td>
+          <td>~$720/yr</td>
           <td>~$1,164/yr</td>
         </tr>
         <tr>
           <td class="crm-feature">Hosting</td>
-          <td>Cloud or Self-Hosted</td>
-          <td class="crm-recommended">Cloud only</td>
+          <td class="crm-recommended">Cloud or Self-Hosted</td>
+          <td>Cloud only</td>
           <td>Cloud only</td>
         </tr>
         <tr>
           <td class="crm-feature">Self-hosted option</td>
-          <td><span class="crm-yes">Yes — free OSS</span></td>
-          <td class="crm-recommended"><span class="crm-no">No</span></td>
+          <td class="crm-recommended"><span class="crm-yes">Yes — free OSS</span></td>
+          <td><span class="crm-no">No</span></td>
           <td><span class="crm-no">No</span></td>
         </tr>
         <tr>
           <td class="crm-feature">Custom objects</td>
-          <td>Unlimited</td>
-          <td class="crm-recommended">Yes (tables)</td>
+          <td class="crm-recommended">Unlimited</td>
+          <td>Yes (tables)</td>
           <td>Up to 10</td>
         </tr>
         <tr>
           <td class="crm-feature">API</td>
-          <td>GraphQL + REST</td>
-          <td class="crm-recommended">REST</td>
+          <td class="crm-recommended">GraphQL + REST</td>
+          <td>REST</td>
           <td>REST</td>
         </tr>
         <tr>
           <td class="crm-feature">Built-in automations</td>
-          <td><span class="crm-no">No — needs n8n</span></td>
           <td class="crm-recommended"><span class="crm-no">No — needs n8n</span></td>
+          <td><span class="crm-no">No — needs n8n</span></td>
           <td><span class="crm-yes">Yes — native</span></td>
         </tr>
         <tr>
           <td class="crm-feature">Built-in email/SMS</td>
-          <td><span class="crm-no">No</span></td>
           <td class="crm-recommended"><span class="crm-no">No</span></td>
+          <td><span class="crm-no">No</span></td>
           <td><span class="crm-yes">Yes (usage fees)</span></td>
         </tr>
         <tr>
           <td class="crm-feature">Calendar integration</td>
-          <td>Via n8n</td>
           <td class="crm-recommended">Via n8n</td>
+          <td>Via n8n</td>
           <td>Native</td>
         </tr>
         <tr>
           <td class="crm-feature">RAG / AI friendly</td>
-          <td><span class="crm-yes">Yes — clean API</span></td>
-          <td class="crm-recommended"><span class="crm-yes">Yes</span></td>
+          <td class="crm-recommended"><span class="crm-yes">Yes — clean API</span></td>
+          <td><span class="crm-yes">Yes</span></td>
           <td><span class="crm-no">Limited</span></td>
         </tr>
         <tr>
           <td class="crm-feature">UI complexity</td>
-          <td>Moderate</td>
-          <td class="crm-recommended">Spreadsheet-style</td>
+          <td class="crm-recommended">Moderate</td>
+          <td>Spreadsheet-style</td>
           <td>Feature-heavy</td>
         </tr>
         <tr>
           <td class="crm-feature">Open source</td>
-          <td><span class="crm-yes">Yes</span></td>
-          <td class="crm-recommended"><span class="crm-no">No</span></td>
+          <td class="crm-recommended"><span class="crm-yes">Yes</span></td>
+          <td><span class="crm-no">No</span></td>
           <td><span class="crm-no">No</span></td>
         </tr>
       </tbody>
@@ -1232,6 +1469,156 @@ flowchart TD
     </div>
 
   </div>
+</section>
+
+<!-- ── 07 RAG AI AGENT ── -->
+<section id="rag">
+  <div class="section-eyebrow reveal">
+    <span class="section-num">07</span>
+    <div class="section-rule"></div>
+  </div>
+  <h2 class="section-title reveal reveal-delay-1">RAG<br>AI Agent</h2>
+
+  <p class="rag-intro reveal reveal-delay-2">A natural language assistant that sits on top of the CRM and inventory — so the team can ask questions in plain English instead of digging through spreadsheets, messages, or Airtable views.</p>
+
+  <!-- NAMING CONVENTION -->
+  <div class="rag-block reveal">
+    <div class="rag-block-label">01 — File Naming Convention</div>
+    <div class="rag-block-body">
+      <p class="rag-block-desc">Every inventory photo in Google Drive follows a fixed structure. Each token is a parseable field — the agent reads the filename directly to understand what the item is without needing a separate database lookup.</p>
+      <div class="naming-formula">
+        <span class="nf-token designer">DESIGNER</span>
+        <span class="nf-sep">_</span>
+        <span class="nf-token type">Item-Type</span>
+        <span class="nf-sep">_</span>
+        <span class="nf-token color">Color</span>
+        <span class="nf-sep">_</span>
+        <span class="nf-token season">Season</span>
+        <span class="nf-sep">_</span>
+        <span class="nf-token year">Year</span>
+        <span class="nf-sep">_</span>
+        <span class="nf-token id">ItemID</span>
+        <span class="nf-ext">.jpg</span>
+      </div>
+      <div class="naming-legend">
+        <div class="nl-row"><span class="nl-swatch designer"></span><span class="nl-label">Designer</span><span class="nl-ex">Alexander-Wang · Versace · Prada</span></div>
+        <div class="nl-row"><span class="nl-swatch type"></span><span class="nl-label">Item Type</span><span class="nl-ex">Mini-Dress · Moto-Jacket · Cargo-Pant</span></div>
+        <div class="nl-row"><span class="nl-swatch color"></span><span class="nl-label">Color</span><span class="nl-ex">Ivory-White · Electric-Blue · Jet-Black</span></div>
+        <div class="nl-row"><span class="nl-swatch season"></span><span class="nl-label">Season</span><span class="nl-ex">SS (Spring-Summer) · FW (Fall-Winter)</span></div>
+        <div class="nl-row"><span class="nl-swatch year"></span><span class="nl-label">Year</span><span class="nl-ex">2024 · 2025</span></div>
+        <div class="nl-row"><span class="nl-swatch id"></span><span class="nl-label">Item ID</span><span class="nl-ex">001 · 042 · 007 — unique per item, links to CRM</span></div>
+      </div>
+      <div class="naming-examples">
+        <div class="naming-ex-label">Examples</div>
+        <div class="naming-ex-row"><span class="nex">Alexander-Wang_Mini-Dress_Ivory-White_SS_2024_001.jpg</span></div>
+        <div class="naming-ex-row"><span class="nex">Versace_Maxi-Dress_Red_FW_2024_042.jpg</span></div>
+        <div class="naming-ex-row"><span class="nex">Balenciaga_Moto-Jacket_Black_SS_2025_007.jpg</span></div>
+        <div class="naming-ex-row"><span class="nex">Prada_Mini-Bag_Nude_FW_2025_019.jpg</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="rag-block reveal">
+    <div class="rag-block-label">02 — Inventory Pipeline</div>
+    <div class="rag-block-desc">n8n watches the Google Drive folder and automatically builds and maintains the written inventory spreadsheet.</div>
+    <div class="rag-pipeline">
+      <div class="rp-step">
+        <div class="rp-icon">📁</div>
+        <div class="rp-name">Google Drive</div>
+        <div class="rp-desc">Inventory photos uploaded with standard naming convention</div>
+      </div>
+      <div class="rp-arrow">→</div>
+      <div class="rp-step">
+        <div class="rp-icon">⚡</div>
+        <div class="rp-name">n8n Watcher</div>
+        <div class="rp-desc">Detects new or renamed files, parses filename into structured fields</div>
+      </div>
+      <div class="rp-arrow">→</div>
+      <div class="rp-step">
+        <div class="rp-icon">📊</div>
+        <div class="rp-name">Inventory Sheet</div>
+        <div class="rp-desc">Google Sheet auto-populated: Designer, Type, Color, Season, Year, ID, Status, Photo link</div>
+      </div>
+      <div class="rp-arrow">→</div>
+      <div class="rp-step">
+        <div class="rp-icon">🔄</div>
+        <div class="rp-name">Airtable Sync</div>
+        <div class="rp-desc">Inventory records synced to CRM — items linked to pulls, status updated in real time</div>
+      </div>
+      <div class="rp-arrow">→</div>
+      <div class="rp-step highlight-step">
+        <div class="rp-icon">🤖</div>
+        <div class="rp-name">RAG Agent</div>
+        <div class="rp-desc">Queries combined inventory + CRM data in plain English via OpenRouter</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXAMPLE QUERIES -->
+  <div class="rag-block reveal">
+    <div class="rag-block-label">03 — Example Queries</div>
+    <div class="rag-block-desc">What the team can ask the agent — answered instantly from live CRM and inventory data.</div>
+    <div class="query-grid">
+      <div class="query-card">
+        <div class="query-q">"What do we currently have out?"</div>
+        <div class="query-a">Returns all active Pull records with status Out or Due Soon — client name, items, and return dates.</div>
+      </div>
+      <div class="query-card">
+        <div class="query-q">"Who has Versace pieces right now?"</div>
+        <div class="query-a">Filters inventory by designer, cross-references active pulls to return the client holding each item.</div>
+      </div>
+      <div class="query-card">
+        <div class="query-q">"Who did we work with at BET last year?"</div>
+        <div class="query-a">Searches closed pull records filtered by coverage event field containing "BET" and the relevant year.</div>
+      </div>
+      <div class="query-card">
+        <div class="query-q">"Make a list of stylists with overdue returns"</div>
+        <div class="query-a">Pulls all records in Overdue stage — client name, items out, days past due, last contact.</div>
+      </div>
+      <div class="query-card">
+        <div class="query-q">"What jackets do we have available in FW 2024?"</div>
+        <div class="query-a">Filters inventory by item type and season, returns only items with status Available.</div>
+      </div>
+      <div class="query-card">
+        <div class="query-q">"Which clients returned on time last season?"</div>
+        <div class="query-a">Queries closed pulls filtered by return date vs due date — surfaces reliability scores by client.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STACK -->
+  <div class="rag-block reveal">
+    <div class="rag-block-label">04 — Tech Stack</div>
+    <div class="rag-block-desc">All components connect through n8n — no custom infrastructure required.</div>
+    <div class="stack-grid">
+      <div class="stack-row">
+        <div class="stack-tool">Google Drive</div>
+        <div class="stack-role">Photo storage — source of truth for inventory images</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">n8n</div>
+        <div class="stack-role">Watches Drive, parses filenames, writes to Sheet and Airtable, triggers RAG queries</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">Google Sheets</div>
+        <div class="stack-role">Auto-generated written inventory — human-readable and editable</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">Airtable</div>
+        <div class="stack-role">CRM database — pull records, client records, inventory status</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">OpenRouter</div>
+        <div class="stack-role">Pay-per-use LLM API — powers the RAG agent, no flat subscription needed</div>
+      </div>
+      <div class="stack-row highlight-row">
+        <div class="stack-tool">RAG Agent</div>
+        <div class="stack-role">Reads live Airtable + Sheet data, answers natural language queries from the team</div>
+      </div>
+    </div>
+  </div>
+
 </section>
 
 <!-- ── FOOTER ── -->
