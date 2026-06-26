@@ -1364,16 +1364,28 @@ flowchart TD
           </th>
           <th>
             <div class="crm-th-name">Self-Hosted</div>
-            <div class="crm-th-tag">Free OSS</div>
+            <div class="crm-th-tag">via Render</div>
           </th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td class="crm-feature">Price</td>
-          <td class="crm-recommended">€20/mo (billed annually)</td>
-          <td>€50/mo (billed annually)</td>
-          <td><span class="crm-yes">Free</span></td>
+          <td class="crm-feature">n8n license</td>
+          <td class="crm-recommended">~$22/mo <span style="color:#555;font-size:11px">(€20, billed annually)</span></td>
+          <td>~$54/mo <span style="color:#555;font-size:11px">(€50, billed annually)</span></td>
+          <td><span class="crm-yes">Free (open source)</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Hosting cost</td>
+          <td class="crm-recommended">Included</td>
+          <td>Included</td>
+          <td>~$7–$25/mo <span style="color:#555;font-size:11px">(Render Starter–Standard)</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Est. total / mo</td>
+          <td class="crm-recommended"><strong style="color:var(--cream)">~$22</strong></td>
+          <td><strong style="color:var(--white)">~$54</strong></td>
+          <td><strong style="color:var(--white)">~$7–$25</strong></td>
         </tr>
         <tr>
           <td class="crm-feature">Executions / month</td>
@@ -1394,34 +1406,22 @@ flowchart TD
           <td>Unlimited</td>
         </tr>
         <tr>
-          <td class="crm-feature">Hosting</td>
-          <td class="crm-recommended">Cloud (n8n managed)</td>
-          <td>Cloud (n8n managed)</td>
-          <td>Self-hosted (your server)</td>
-        </tr>
-        <tr>
           <td class="crm-feature">Workflow history</td>
           <td class="crm-recommended"><span class="crm-no">No</span></td>
           <td><span class="crm-yes">7 days</span></td>
           <td><span class="crm-yes">Full</span></td>
         </tr>
         <tr>
-          <td class="crm-feature">Admin roles</td>
-          <td class="crm-recommended"><span class="crm-no">No</span></td>
-          <td><span class="crm-yes">Yes</span></td>
-          <td><span class="crm-yes">Yes</span></td>
-        </tr>
-        <tr>
-          <td class="crm-feature">Support</td>
-          <td class="crm-recommended">Community forum</td>
-          <td>Community forum</td>
-          <td>Community forum</td>
+          <td class="crm-feature">Maintenance</td>
+          <td class="crm-recommended"><span class="crm-yes">None — managed</span></td>
+          <td><span class="crm-yes">None — managed</span></td>
+          <td><span class="crm-no">You manage updates</span></td>
         </tr>
         <tr>
           <td class="crm-feature">Free trial</td>
           <td class="crm-recommended"><span class="crm-yes">Yes — no card required</span></td>
           <td><span class="crm-yes">Yes — no card required</span></td>
-          <td><span class="crm-yes">Always free</span></td>
+          <td><span class="crm-yes">Free tier available on Render</span></td>
         </tr>
       </tbody>
     </table>
@@ -1431,7 +1431,7 @@ flowchart TD
     <span style="font-size: 18px; flex-shrink: 0;">💡</span>
     <div>
       <div style="font-family: 'Phudu', sans-serif; font-size: 15px; color: var(--white); margin-bottom: 6px;">Why Starter is enough</div>
-      <div style="font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 300; color: var(--text-sec); line-height: 1.7;">Each automation trigger counts as one execution. For a showroom running ~20 appointments per day at peak season, with reminders and return checks, you'd use roughly 100–200 executions daily — well within the 2,500/month limit. Upgrade to Pro only if volume grows significantly or you need workflow history for debugging.</div>
+      <div style="font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 300; color: var(--text-sec); line-height: 1.7;">Each automation trigger counts as one execution. For a showroom running ~20 appointments per day at peak season with reminders and return checks, you'd use roughly 100–200 executions daily — well within the 2,500/month limit. Cloud Starter at ~$22/mo is the lowest-friction option. Self-hosting on Render can be cheaper long-term but requires managing updates yourself — only worth it once the team is comfortable with the platform.</div>
     </div>
   </div>
 </section>
