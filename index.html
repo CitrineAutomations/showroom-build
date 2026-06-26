@@ -1293,12 +1293,6 @@ flowchart TD
           <td>Cloud only</td>
         </tr>
         <tr>
-          <td class="crm-feature">Self-hosted option</td>
-          <td class="crm-recommended"><span class="crm-yes">Yes — free OSS</span></td>
-          <td><span class="crm-no">No</span></td>
-          <td><span class="crm-no">No</span></td>
-        </tr>
-        <tr>
           <td class="crm-feature">Custom objects</td>
           <td class="crm-recommended">Unlimited</td>
           <td>Yes (tables)</td>
@@ -1340,21 +1334,112 @@ flowchart TD
           <td>Spreadsheet-style</td>
           <td>Feature-heavy</td>
         </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── 05 N8N PRICING ── -->
+<section id="n8n">
+  <div class="section-eyebrow reveal">
+    <span class="section-num">05</span>
+    <div class="section-rule"></div>
+  </div>
+  <h2 class="section-title reveal reveal-delay-1">n8n<br>Pricing</h2>
+
+  <p class="rag-intro reveal reveal-delay-2">n8n is the automation backbone connecting the CRM, Google Drive, Google Calendar, and the RAG agent. Pricing is based on workflow executions per month — for a small showroom team, the Starter plan comfortably covers day-to-day operations.</p>
+
+  <div class="crm-table-wrap reveal reveal-delay-3">
+    <table class="crm-table">
+      <thead>
         <tr>
-          <td class="crm-feature">Open source</td>
-          <td class="crm-recommended"><span class="crm-yes">Yes</span></td>
-          <td><span class="crm-no">No</span></td>
-          <td><span class="crm-no">No</span></td>
+          <th class="crm-feature-col"></th>
+          <th class="crm-recommended">
+            <div class="crm-th-name">Starter</div>
+            <div class="crm-th-tag recommended-tag">Recommended</div>
+          </th>
+          <th>
+            <div class="crm-th-name">Pro</div>
+            <div class="crm-th-tag">Growing Teams</div>
+          </th>
+          <th>
+            <div class="crm-th-name">Self-Hosted</div>
+            <div class="crm-th-tag">Free OSS</div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="crm-feature">Price</td>
+          <td class="crm-recommended">€20/mo (billed annually)</td>
+          <td>€50/mo (billed annually)</td>
+          <td><span class="crm-yes">Free</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Executions / month</td>
+          <td class="crm-recommended">2,500</td>
+          <td>10,000</td>
+          <td>Unlimited</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Concurrent executions</td>
+          <td class="crm-recommended">5</td>
+          <td>20</td>
+          <td>Unlimited</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Users</td>
+          <td class="crm-recommended">Unlimited</td>
+          <td>Unlimited</td>
+          <td>Unlimited</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Hosting</td>
+          <td class="crm-recommended">Cloud (n8n managed)</td>
+          <td>Cloud (n8n managed)</td>
+          <td>Self-hosted (your server)</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Workflow history</td>
+          <td class="crm-recommended"><span class="crm-no">No</span></td>
+          <td><span class="crm-yes">7 days</span></td>
+          <td><span class="crm-yes">Full</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Admin roles</td>
+          <td class="crm-recommended"><span class="crm-no">No</span></td>
+          <td><span class="crm-yes">Yes</span></td>
+          <td><span class="crm-yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Support</td>
+          <td class="crm-recommended">Community forum</td>
+          <td>Community forum</td>
+          <td>Community forum</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Free trial</td>
+          <td class="crm-recommended"><span class="crm-yes">Yes — no card required</span></td>
+          <td><span class="crm-yes">Yes — no card required</span></td>
+          <td><span class="crm-yes">Always free</span></td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="n8n-note reveal" style="margin-top: 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; display: flex; gap: 16px; align-items: flex-start;">
+    <span style="font-size: 18px; flex-shrink: 0;">💡</span>
+    <div>
+      <div style="font-family: 'Phudu', sans-serif; font-size: 15px; color: var(--white); margin-bottom: 6px;">Why Starter is enough</div>
+      <div style="font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 300; color: var(--text-sec); line-height: 1.7;">Each automation trigger counts as one execution. For a showroom running ~20 appointments per day at peak season, with reminders and return checks, you'd use roughly 100–200 executions daily — well within the 2,500/month limit. Upgrade to Pro only if volume grows significantly or you need workflow history for debugging.</div>
+    </div>
   </div>
 </section>
 
 <!-- ── 06 AUTOMATIONS ── -->
 <section id="automations">
   <div class="section-eyebrow reveal">
-    <span class="section-num">05</span>
+    <span class="section-num">06</span>
     <div class="section-rule"></div>
   </div>
   <h2 class="section-title reveal reveal-delay-1">n8n<br><em>Automations</em></h2>
@@ -1473,7 +1558,7 @@ flowchart TD
 <!-- ── 07 RAG AI AGENT ── -->
 <section id="rag">
   <div class="section-eyebrow reveal">
-    <span class="section-num">06</span>
+    <span class="section-num">07</span>
     <div class="section-rule"></div>
   </div>
   <h2 class="section-title reveal reveal-delay-1">RAG<br>AI Agent</h2>
