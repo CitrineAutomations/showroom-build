@@ -570,6 +570,73 @@
       text-transform: uppercase;
     }
 
+    /* ── CRM TABLE ── */
+    .crm-table-wrap {
+      overflow-x: auto;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+    .crm-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 13px;
+    }
+    .crm-table thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+    .crm-table th {
+      padding: 20px 24px;
+      text-align: left;
+      background: var(--surface2);
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--white);
+    }
+    .crm-table th.crm-feature-col { width: 200px; }
+    .crm-th-name {
+      font-family: 'Phudu', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+    .crm-th-tag {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-sec);
+    }
+    .recommended-tag { color: var(--cream); }
+    .crm-table td {
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-sec);
+      vertical-align: middle;
+    }
+    .crm-table tbody tr:last-child td { border-bottom: none; }
+    .crm-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
+    .crm-feature {
+      font-weight: 600;
+      color: var(--white);
+      white-space: nowrap;
+    }
+    .crm-recommended {
+      background: var(--cream-dim);
+      border-left: 1px solid var(--cream-border);
+      border-right: 1px solid var(--cream-border);
+    }
+    .crm-table thead th.crm-recommended {
+      border-top: 2px solid var(--cream);
+    }
+    .crm-yes {
+      color: var(--cream);
+      font-weight: 500;
+    }
+    .crm-no { color: #555; }
+
     @media (max-width: 900px) {
       section { padding: 64px 32px; }
       .cover { padding: 64px 32px; }
@@ -943,10 +1010,115 @@ flowchart TD
   </div>
 </section>
 
-<!-- ── 05 AUTOMATIONS ── -->
-<section id="automations">
+<!-- ── 05 CRM OPTIONS ── -->
+<section id="crm">
   <div class="section-eyebrow reveal">
     <span class="section-num">05</span>
+    <div class="section-rule"></div>
+  </div>
+  <h2 class="section-title reveal reveal-delay-1">CRM<br>Options</h2>
+
+  <div class="crm-table-wrap reveal reveal-delay-2">
+    <table class="crm-table">
+      <thead>
+        <tr>
+          <th class="crm-feature-col"></th>
+          <th>
+            <div class="crm-th-name">Twenty</div>
+            <div class="crm-th-tag">Open Source</div>
+          </th>
+          <th class="crm-recommended">
+            <div class="crm-th-name">Airtable</div>
+            <div class="crm-th-tag recommended-tag">Recommended</div>
+          </th>
+          <th>
+            <div class="crm-th-name">GoHighLevel</div>
+            <div class="crm-th-tag">All-in-One</div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="crm-feature">Pricing (3 users)</td>
+          <td>$27/mo</td>
+          <td class="crm-recommended">$60/mo</td>
+          <td>$97/mo (flat)</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Annual cost</td>
+          <td>~$324/yr</td>
+          <td class="crm-recommended">~$720/yr</td>
+          <td>~$1,164/yr</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Hosting</td>
+          <td>Cloud or Self-Hosted</td>
+          <td class="crm-recommended">Cloud only</td>
+          <td>Cloud only</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Self-hosted option</td>
+          <td><span class="crm-yes">Yes — free OSS</span></td>
+          <td class="crm-recommended"><span class="crm-no">No</span></td>
+          <td><span class="crm-no">No</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Custom objects</td>
+          <td>Unlimited</td>
+          <td class="crm-recommended">Yes (tables)</td>
+          <td>Up to 10</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">API</td>
+          <td>GraphQL + REST</td>
+          <td class="crm-recommended">REST</td>
+          <td>REST</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Built-in automations</td>
+          <td><span class="crm-no">No — needs n8n</span></td>
+          <td class="crm-recommended"><span class="crm-no">No — needs n8n</span></td>
+          <td><span class="crm-yes">Yes — native</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Built-in email/SMS</td>
+          <td><span class="crm-no">No</span></td>
+          <td class="crm-recommended"><span class="crm-no">No</span></td>
+          <td><span class="crm-yes">Yes (usage fees)</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Calendar integration</td>
+          <td>Via n8n</td>
+          <td class="crm-recommended">Via n8n</td>
+          <td>Native</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">RAG / AI friendly</td>
+          <td><span class="crm-yes">Yes — clean API</span></td>
+          <td class="crm-recommended"><span class="crm-yes">Yes</span></td>
+          <td><span class="crm-no">Limited</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">UI complexity</td>
+          <td>Moderate</td>
+          <td class="crm-recommended">Spreadsheet-style</td>
+          <td>Feature-heavy</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Open source</td>
+          <td><span class="crm-yes">Yes</span></td>
+          <td class="crm-recommended"><span class="crm-no">No</span></td>
+          <td><span class="crm-no">No</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── 06 AUTOMATIONS ── -->
+<section id="automations">
+  <div class="section-eyebrow reveal">
+    <span class="section-num">06</span>
     <div class="section-rule"></div>
   </div>
   <h2 class="section-title reveal reveal-delay-1">n8n<br><em>Automations</em></h2>
