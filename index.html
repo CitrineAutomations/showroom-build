@@ -932,9 +932,10 @@
     <ul class="cover-toc">
       <li><span>01</span>Customer Journey</li>
       <li><span>02</span>Users</li>
-      <li><span>03</span>Pipeline</li>
-      <li><span>04</span>Object Model</li>
+      <li><span>03</span>Object Model</li>
+      <li><span>04</span>CRM Options</li>
       <li><span>05</span>Automations</li>
+      <li><span>06</span>RAG Agent</li>
     </ul>
     <div class="draft-chip">Draft — Present &amp; Adjust</div>
   </div>
@@ -997,6 +998,79 @@ flowchart TD
     style CLS fill:#1a1910,stroke:#4a4535,color:#F2EAD3
     </div>
   </div>
+
+  <div style="margin-top: 56px;">
+    <div class="pipeline-group-label reveal" style="margin-bottom: 20px; font-family: 'Montserrat', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-sec);">Pipeline Stages</div>
+
+    <div class="pipeline-group reveal">
+      <div class="pipeline-group-label">Appointment Track</div>
+      <div class="pipeline-stages">
+        <div class="stage">
+          <span class="stage-tag">Stage 01</span>
+          <div class="stage-name">Appointment Requested</div>
+          <div class="stage-desc">Client reaches out. Rep creates record manually in CRM.</div>
+        </div>
+        <div class="stage">
+          <span class="stage-tag">Stage 02</span>
+          <div class="stage-name">Appointment Confirmed</div>
+          <div class="stage-desc">Date, time, rep assigned. Confirmation sent. Calendar event created.</div>
+        </div>
+        <div class="stage">
+          <span class="stage-tag">Stage 03</span>
+          <div class="stage-name">Visited</div>
+          <div class="stage-desc">Appointment completed. Pull finalized during the showroom visit.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-connector reveal">
+      <div class="pipeline-connector-line"></div>
+      <div class="pipeline-connector-text">Pull begins</div>
+    </div>
+
+    <div class="pipeline-group reveal">
+      <div class="pipeline-group-label">Pull Track</div>
+      <div class="pipeline-stages">
+        <div class="stage">
+          <span class="stage-tag">Stage 04</span>
+          <div class="stage-name">Out</div>
+          <div class="stage-desc">Items have left the showroom. Return date set. Calendar event created and Event ID stored.</div>
+        </div>
+        <div class="stage automated">
+          <span class="stage-tag">Stage 05 · Automated</span>
+          <div class="stage-name">Due Soon</div>
+          <div class="stage-desc">Return date within threshold. Reminder fires to client and rep automatically.</div>
+        </div>
+        <div class="stage automated">
+          <span class="stage-tag">Stage 06 · Automated</span>
+          <div class="stage-name">Overdue</div>
+          <div class="stage-desc">Past return date with no return logged. Escalation sent to rep and owner.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipeline-connector reveal">
+      <div class="pipeline-connector-line"></div>
+      <div class="pipeline-connector-text">Items return</div>
+    </div>
+
+    <div class="pipeline-group reveal">
+      <div class="pipeline-group-label">Close Track</div>
+      <div class="pipeline-stages">
+        <div class="stage">
+          <span class="stage-tag">Stage 07</span>
+          <div class="stage-name">Returned</div>
+          <div class="stage-desc">Items received back. Condition checked. Inventory status reset to available.</div>
+        </div>
+        <div class="stage">
+          <span class="stage-tag">Stage 08</span>
+          <div class="stage-name">Closed</div>
+          <div class="stage-desc">Coverage logged — event name, platform, credit given. Client reliability score updated.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </section>
 
 <!-- ── 02 USERS ── -->
@@ -1057,87 +1131,11 @@ flowchart TD
   </div>
 </section>
 
-<!-- ── 03 PIPELINE ── -->
-<section id="pipeline">
-  <div class="section-eyebrow reveal">
-    <span class="section-num">03</span>
-    <div class="section-rule"></div>
-  </div>
-  <h2 class="section-title reveal reveal-delay-1">Pipeline<br><em>Stages</em></h2>
+<!-- ── 03 OBJECT MODEL ── -->
 
-  <div class="pipeline-group reveal reveal-delay-2">
-    <div class="pipeline-group-label">Appointment Track</div>
-    <div class="pipeline-stages">
-      <div class="stage">
-        <span class="stage-tag">Stage 01</span>
-        <div class="stage-name">Appointment Requested</div>
-        <div class="stage-desc">Client reaches out. Rep creates record manually in CRM.</div>
-      </div>
-      <div class="stage">
-        <span class="stage-tag">Stage 02</span>
-        <div class="stage-name">Appointment Confirmed</div>
-        <div class="stage-desc">Date, time, rep assigned. Confirmation sent. Calendar event created.</div>
-      </div>
-      <div class="stage">
-        <span class="stage-tag">Stage 03</span>
-        <div class="stage-name">Visited</div>
-        <div class="stage-desc">Appointment completed. Pull finalized during the showroom visit.</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="pipeline-connector reveal">
-    <div class="pipeline-connector-line"></div>
-    <div class="pipeline-connector-text">Pull begins</div>
-  </div>
-
-  <div class="pipeline-group reveal">
-    <div class="pipeline-group-label">Pull Track</div>
-    <div class="pipeline-stages">
-      <div class="stage">
-        <span class="stage-tag">Stage 04</span>
-        <div class="stage-name">Out</div>
-        <div class="stage-desc">Items have left the showroom. Return date set. Calendar event created and Event ID stored.</div>
-      </div>
-      <div class="stage automated">
-        <span class="stage-tag">Stage 05 · Automated</span>
-        <div class="stage-name">Due Soon</div>
-        <div class="stage-desc">Return date within threshold. Reminder fires to client and rep automatically.</div>
-      </div>
-      <div class="stage automated">
-        <span class="stage-tag">Stage 06 · Automated</span>
-        <div class="stage-name">Overdue</div>
-        <div class="stage-desc">Past return date with no return logged. Escalation sent to rep and owner.</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="pipeline-connector reveal">
-    <div class="pipeline-connector-line"></div>
-    <div class="pipeline-connector-text">Items return</div>
-  </div>
-
-  <div class="pipeline-group reveal">
-    <div class="pipeline-group-label">Close Track</div>
-    <div class="pipeline-stages">
-      <div class="stage">
-        <span class="stage-tag">Stage 07</span>
-        <div class="stage-name">Returned</div>
-        <div class="stage-desc">Items received back. Condition checked. Inventory status reset to available.</div>
-      </div>
-      <div class="stage">
-        <span class="stage-tag">Stage 08</span>
-        <div class="stage-name">Closed</div>
-        <div class="stage-desc">Coverage logged — event name, platform, credit given. Client reliability score updated.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ── 04 OBJECT MODEL ── -->
 <section id="objects">
   <div class="section-eyebrow reveal">
-    <span class="section-num">04</span>
+    <span class="section-num">03</span>
     <div class="section-rule"></div>
   </div>
   <h2 class="section-title reveal reveal-delay-1">Object<br><em>Model</em></h2>
@@ -1250,7 +1248,7 @@ flowchart TD
 <!-- ── 05 CRM OPTIONS ── -->
 <section id="crm">
   <div class="section-eyebrow reveal">
-    <span class="section-num">05</span>
+    <span class="section-num">04</span>
     <div class="section-rule"></div>
   </div>
   <h2 class="section-title reveal reveal-delay-1">CRM<br>Options</h2>
@@ -1355,7 +1353,7 @@ flowchart TD
 <!-- ── 06 AUTOMATIONS ── -->
 <section id="automations">
   <div class="section-eyebrow reveal">
-    <span class="section-num">06</span>
+    <span class="section-num">05</span>
     <div class="section-rule"></div>
   </div>
   <h2 class="section-title reveal reveal-delay-1">n8n<br><em>Automations</em></h2>
@@ -1474,7 +1472,7 @@ flowchart TD
 <!-- ── 07 RAG AI AGENT ── -->
 <section id="rag">
   <div class="section-eyebrow reveal">
-    <span class="section-num">07</span>
+    <span class="section-num">06</span>
     <div class="section-rule"></div>
   </div>
   <h2 class="section-title reveal reveal-delay-1">RAG<br>AI Agent</h2>
