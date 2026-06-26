@@ -1432,29 +1432,29 @@ flowchart TD
         </thead>
         <tbody>
           <tr>
-            <td class="crm-feature">n8n (automation + agent host)</td>
-            <td>Cloud Starter or Render Standard — runs the agent workflows</td>
-            <td><span class="crm-yes">~$25/mo</span></td>
+            <td class="crm-feature">Python hosting (Modal)</td>
+            <td>Serverless Python — agent only runs on query, dormant otherwise. $30 free credit/mo included. Pays per second of compute, not idle time.</td>
+            <td><span class="crm-yes">~$0–$5/mo</span></td>
           </tr>
           <tr>
             <td class="crm-feature">Slack workspace</td>
-            <td>Free plan supports up to 10 users + unlimited app integrations — no paid plan needed at this team size</td>
+            <td>Free plan — up to 10 users, unlimited app integrations. No paid plan needed at this team size.</td>
             <td><span class="crm-yes">$0</span></td>
           </tr>
           <tr>
             <td class="crm-feature">OpenRouter (LLM API)</td>
-            <td>Pay-per-use via Claude Haiku or similar — ad hoc queries by a 3-person team. Est. 500–1,000 queries/mo at ~$0.001–$0.003 each</td>
+            <td>Pay-per-use via Claude Haiku or similar. Est. 500–1,000 queries/mo at ~$0.001–$0.003 each for a 3-person team.</td>
             <td>~$1–$3/mo</td>
           </tr>
           <tr>
-            <td class="crm-feature">Vector store (optional)</td>
-            <td>Only needed if embedding inventory data for semantic search. Pinecone free tier covers this use case at current scale</td>
+            <td class="crm-feature">Vector store (Pinecone)</td>
+            <td>Embeds inventory data for semantic search. Free tier covers this use case at current scale — upgrade only if inventory grows significantly.</td>
             <td><span class="crm-yes">$0 (free tier)</span></td>
           </tr>
           <tr>
-            <td class="crm-feature" style="border-top: 1px solid var(--cream-border); color: var(--cream);">Total estimate</td>
-            <td style="border-top: 1px solid var(--cream-border); color: var(--text-sec);">Full stack — automation, Slack bot, AI queries, vector store</td>
-            <td style="border-top: 1px solid var(--cream-border);"><strong style="color:var(--cream); font-size: 15px;">~$26–$28/mo</strong></td>
+            <td class="crm-feature" style="border-top: 1px solid var(--cream-border); color: var(--cream);">Total (agent only)</td>
+            <td style="border-top: 1px solid var(--cream-border); color: var(--text-sec);">Python hosting + Slack + LLM queries + vector store. n8n ($25/mo) is already budgeted separately.</td>
+            <td style="border-top: 1px solid var(--cream-border);"><strong style="color:var(--cream); font-size: 15px;">~$1–$8/mo</strong></td>
           </tr>
         </tbody>
       </table>
