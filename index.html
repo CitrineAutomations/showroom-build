@@ -1169,7 +1169,13 @@ flowchart TD
         <div class="field-row"><span class="field-name">phone</span><span class="field-type">text</span></div>
         <div class="field-row"><span class="field-name">instagram</span><span class="field-type">text</span></div>
         <div class="field-row"><span class="field-name">pull_history</span><span class="field-type link">→ Pull</span></div>
-        <div class="field-row"><span class="field-name">reliability_score</span><span class="field-type">formula</span></div>
+        <div class="field-row">
+          <div class="field-left">
+            <span class="field-name">reliability_score</span>
+            <span class="field-note">Auto-calculated grade (1–10) based on pull history. Factors in on-time return rate, credit given rate, and any damaged or lost items. Updated by n8n each time a pull is closed — gives the team an instant read on how dependable a stylist is before approving a new pull.</span>
+          </div>
+          <span class="field-type">formula</span>
+        </div>
         <div class="field-row"><span class="field-name">notes</span><span class="field-type">long text</span></div>
       </div>
     </div>
