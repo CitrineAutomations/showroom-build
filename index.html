@@ -1373,12 +1373,12 @@ flowchart TD
         <tr>
           <td class="crm-feature">Hosting cost</td>
           <td class="crm-recommended">Included</td>
-          <td>~$7–$25/mo <span style="color:#555;font-size:11px">(Render Starter–Standard)</span></td>
+          <td>~$25/mo <span style="color:#555;font-size:11px">(Render Standard — required for AI agents)</span></td>
         </tr>
         <tr>
           <td class="crm-feature">Est. total / mo</td>
-          <td class="crm-recommended"><strong style="color:var(--cream)">~$22</strong></td>
-          <td><strong style="color:var(--white)">~$7–$25</strong></td>
+          <td class="crm-recommended"><strong style="color:var(--cream)">~$25</strong></td>
+          <td><strong style="color:var(--white)">~$25</strong></td>
         </tr>
         <tr>
           <td class="crm-feature">Executions / month</td>
@@ -1405,11 +1405,6 @@ flowchart TD
           <td class="crm-recommended"><span class="crm-yes">None — managed</span></td>
           <td><span class="crm-no">You manage updates</span></td>
         </tr>
-        <tr>
-          <td class="crm-feature">Free trial</td>
-          <td class="crm-recommended"><span class="crm-yes">Yes — no card required</span></td>
-          <td><span class="crm-yes">Free tier on Render</span></td>
-        </tr>
       </tbody>
     </table>
   </div>
@@ -1417,8 +1412,52 @@ flowchart TD
   <div class="n8n-note reveal" style="margin-top: 20px; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; display: flex; gap: 16px; align-items: flex-start;">
     <span style="font-size: 18px; flex-shrink: 0;">💡</span>
     <div>
-      <div style="font-family: 'Phudu', sans-serif; font-size: 15px; color: var(--white); margin-bottom: 6px;">Why Starter is enough</div>
-      <div style="font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 300; color: var(--text-sec); line-height: 1.7;">Each automation trigger counts as one execution. For a showroom running ~20 appointments per day at peak season with reminders and return checks, you'd use roughly 100–200 executions daily — well within the 2,500/month limit. Cloud Starter at ~$22/mo is the lowest-friction option. Self-hosting on Render can be cheaper long-term but requires managing updates yourself — only worth it once the team is comfortable with the platform.</div>
+      <div style="font-family: 'Phudu', sans-serif; font-size: 15px; color: var(--white); margin-bottom: 6px;">Why $25/mo</div>
+      <div style="font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 300; color: var(--text-sec); line-height: 1.7;">Running AI agents requires a persistent, always-on process — the Render Standard tier ($25/mo) prevents the instance from sleeping between requests, which is essential for a Slack bot that needs to respond immediately. Cloud Starter covers the same execution volume and is fully managed, making it equally valid at the same price point.</div>
+    </div>
+  </div>
+
+  <!-- AI AGENT COST BREAKDOWN -->
+  <div style="margin-top: 48px;">
+    <div class="rag-block-label reveal" style="margin-bottom: 20px;">AI Agent — Monthly Cost Estimate</div>
+
+    <div class="crm-table-wrap reveal">
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th class="crm-feature-col">Component</th>
+            <th>Details</th>
+            <th>Est. Monthly Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="crm-feature">n8n (automation + agent host)</td>
+            <td>Cloud Starter or Render Standard — runs the agent workflows</td>
+            <td><span class="crm-yes">~$25/mo</span></td>
+          </tr>
+          <tr>
+            <td class="crm-feature">Slack workspace</td>
+            <td>Free plan supports up to 10 users + unlimited app integrations — no paid plan needed at this team size</td>
+            <td><span class="crm-yes">$0</span></td>
+          </tr>
+          <tr>
+            <td class="crm-feature">OpenRouter (LLM API)</td>
+            <td>Pay-per-use via Claude Haiku or similar — ad hoc queries by a 3-person team. Est. 500–1,000 queries/mo at ~$0.001–$0.003 each</td>
+            <td>~$1–$3/mo</td>
+          </tr>
+          <tr>
+            <td class="crm-feature">Vector store (optional)</td>
+            <td>Only needed if embedding inventory data for semantic search. Pinecone free tier covers this use case at current scale</td>
+            <td><span class="crm-yes">$0 (free tier)</span></td>
+          </tr>
+          <tr>
+            <td class="crm-feature" style="border-top: 1px solid var(--cream-border); color: var(--cream);">Total estimate</td>
+            <td style="border-top: 1px solid var(--cream-border); color: var(--text-sec);">Full stack — automation, Slack bot, AI queries, vector store</td>
+            <td style="border-top: 1px solid var(--cream-border);"><strong style="color:var(--cream); font-size: 15px;">~$26–$28/mo</strong></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </section>
