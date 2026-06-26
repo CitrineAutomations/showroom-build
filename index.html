@@ -415,12 +415,25 @@
     }
     .field-row {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       padding: 8px 0;
       border-bottom: 1px solid rgba(39,39,42,0.6);
+      gap: 8px;
+    }
+    .field-left {
+      display: flex;
+      flex-direction: column;
     }
     .field-row:last-child { border-bottom: none; }
+    .field-note {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 10px;
+      font-weight: 300;
+      color: #555;
+      margin-top: 2px;
+      line-height: 1.4;
+    }
     .field-name {
       font-family: 'Montserrat', sans-serif;
       font-size: 12px;
@@ -1173,7 +1186,13 @@ flowchart TD
         <div class="field-row"><span class="field-name">status</span><span class="field-type">select</span></div>
         <div class="field-row"><span class="field-name">looking_for</span><span class="field-type">long text</span></div>
         <div class="field-row"><span class="field-name">pull</span><span class="field-type link">→ Pull</span></div>
-        <div class="field-row"><span class="field-name">calendar_event_id</span><span class="field-type">text</span></div>
+        <div class="field-row">
+          <div class="field-left">
+            <span class="field-name">calendar_event_id</span>
+            <span class="field-note">The unique ID of the Google Calendar event for this appointment. Stored so n8n can update or delete it if the appointment changes.</span>
+          </div>
+          <span class="field-type">text</span>
+        </div>
       </div>
     </div>
 
@@ -1188,10 +1207,34 @@ flowchart TD
         <div class="field-row"><span class="field-name">items</span><span class="field-type link">→ Inventory</span></div>
         <div class="field-row"><span class="field-name">return_date</span><span class="field-type">date</span></div>
         <div class="field-row"><span class="field-name">stage</span><span class="field-type">select</span></div>
-        <div class="field-row"><span class="field-name">calendar_event_id</span><span class="field-type">text</span></div>
-        <div class="field-row"><span class="field-name">coverage_event</span><span class="field-type">text</span></div>
-        <div class="field-row"><span class="field-name">coverage_platform</span><span class="field-type">text</span></div>
-        <div class="field-row"><span class="field-name">credit_given</span><span class="field-type">checkbox</span></div>
+        <div class="field-row">
+          <div class="field-left">
+            <span class="field-name">calendar_event_id</span>
+            <span class="field-note">The unique ID of the Google Calendar return event. Stored so n8n can update the date if the return is extended, without creating duplicates.</span>
+          </div>
+          <span class="field-type">text</span>
+        </div>
+        <div class="field-row">
+          <div class="field-left">
+            <span class="field-name">coverage_event</span>
+            <span class="field-note">The name of the event where the pulled items appeared — e.g. "BET Awards 2025", "Grammy Week". Used to track which events drive the most pull activity.</span>
+          </div>
+          <span class="field-type">text</span>
+        </div>
+        <div class="field-row">
+          <div class="field-left">
+            <span class="field-name">coverage_platform</span>
+            <span class="field-note">Where the look was featured — e.g. "Instagram", "Vogue", "Red Carpet". Helps identify which clients and events generate the most visible press.</span>
+          </div>
+          <span class="field-type">text</span>
+        </div>
+        <div class="field-row">
+          <div class="field-left">
+            <span class="field-name">credit_given</span>
+            <span class="field-note">Checked once the stylist or publication has credited Division PR. Useful for tracking which clients acknowledge the showroom in their coverage.</span>
+          </div>
+          <span class="field-type">checkbox</span>
+        </div>
       </div>
     </div>
 
