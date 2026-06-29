@@ -1,0 +1,88 @@
+/* Division PR Client Portal — Master Token Layer
+   Source of truth. Never use raw hex values in component or screen code.
+   Import this before any utility or component CSS.
+*/
+
+:root {
+  /* ── Backgrounds ─────────────────────────────────── */
+  --color-bg:              #0A0A0A;
+  --color-surface:         #141414;
+  --color-surface-raised:  #1C1C1C;
+
+  /* ── Borders ─────────────────────────────────────── */
+  --color-border:          #2A2A2A;
+  --color-border-strong:   #3D3D3D;
+
+  /* ── Text ────────────────────────────────────────── */
+  --color-text-primary:    #F5F0E6;
+  --color-text-secondary:  #8A8478;
+  --color-text-muted:      #5A5550;
+
+  /* ── Accent (gold) ───────────────────────────────── */
+  --color-accent:          #C9A96E;
+  --color-accent-hover:    #B8955A;
+
+  /* ── Semantic: Danger ────────────────────────────── */
+  --color-danger:          #C0392B;
+  --color-danger-surface:  #1F0E0C;
+
+  /* ── Semantic: Warning ───────────────────────────── */
+  --color-warning:         #D4A017;
+  --color-warning-surface: #1A1508;
+
+  /* ── Semantic: Success ───────────────────────────── */
+  --color-success:         #4A7C59;
+  --color-success-surface: #0C150F;
+
+  /* ── Typography ──────────────────────────────────── */
+  --font-sans:    'Inter Variable', system-ui, sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-4xl:  2.25rem;    /* 36px */
+
+  /* ── Spacing (4px base) ──────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ── Radii ───────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* ── Motion buckets ──────────────────────────────── */
+  --duration-instant: 0ms;
+  --duration-micro:   100ms;
+  --duration-reveal:  220ms;
+  --duration-page:    300ms;
+  --duration-expand:  250ms;
+
+  --ease-out:   ease-out;
+  --ease-ui:    cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-page:  cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-expand: cubic-bezier(0.0, 0.0, 0.2, 1);
+
+  /* ── Layout ──────────────────────────────────────── */
+  --max-width:      1120px;
+  --header-height:  56px;
+  --page-padding-x: var(--space-4);   /* 16px mobile */
+}
+
+@media (min-width: 768px) {
+  :root {
+    --page-padding-x: var(--space-8); /* 32px tablet+ */
+  }
+}

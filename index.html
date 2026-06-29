@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Phudu:wght@300..900&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <style>
     :root {
       --bg:       #0A0A0A;
@@ -50,7 +49,7 @@
 
     /* ── COVER ── */
     .cover {
-      min-height: 100vh;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -194,15 +193,6 @@
     }
 
     /* ── JOURNEY ── */
-    .journey-wrap {
-      background: var(--surface3);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 48px 40px;
-      overflow-x: auto;
-    }
-    .mermaid { display: flex; justify-content: center; }
-
     /* ── USER BENTO ── */
     .user-bento {
       display: grid;
@@ -380,7 +370,6 @@
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 24px;
-      overflow: hidden;
       transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), border-color 0.3s;
     }
     .object-card:hover {
@@ -963,57 +952,7 @@
   </div>
   <h2 class="section-title reveal reveal-delay-1">Customer<br><em>Journey</em></h2>
 
-  <div class="journey-wrap reveal reveal-delay-2">
-    <div class="mermaid">
-flowchart TD
-    A([Client reaches out\nEmail · DM · Phone]) --> B
-
-    subgraph REL ["  RELATIONSHIP"]
-      B[Contact record created\nor located in CRM]
-      B --> C[Rep qualifies client\nType · Agency · Project]
-    end
-
-    subgraph APT ["  APPOINTMENT"]
-      C --> D[Client requests appointment]
-      D --> E[Rep manually books\nDate · Time · Rep assigned]
-      E --> F[Confirmation sent to client\nCalendar event created]
-      F --> G[Day-before reminder fires]
-      G --> H[Rep receives morning brief\nClient pull history + preferences]
-      H --> I[Client arrives at showroom]
-      I --> J[Items selected during visit\nPull finalized on the spot]
-    end
-
-    subgraph PULL ["  PULL ACTIVE"]
-      J --> K[Items logged out\nReturn date set]
-      K --> L[Google Calendar return\nevent created]
-      L --> M{Return\ndate status}
-      M -->|On track| N[24hr reminder\nsent to client]
-      M -->|Approaching| O[Stage → DUE SOON\nAutomated]
-      M -->|Passed| P[Stage → OVERDUE\nEscalation triggered]
-    end
-
-    subgraph RET ["  RETURN"]
-      N --> Q[Items received back]
-      O --> Q
-      P --> Q
-      Q --> R[Condition check\nInventory updated]
-    end
-
-    subgraph CLS ["  CLOSED"]
-      R --> S[Coverage tracked\nEvent · Platform · Credit]
-      S --> T[Client record updated\nReliability score refreshed]
-      T --> U([Pull closed])
-    end
-
-    style REL fill:#141414,stroke:#27272A,color:#A1A1AA
-    style APT fill:#141414,stroke:#27272A,color:#A1A1AA
-    style PULL fill:#141414,stroke:#27272A,color:#A1A1AA
-    style RET fill:#141414,stroke:#27272A,color:#A1A1AA
-    style CLS fill:#1a1910,stroke:#4a4535,color:#F2EAD3
-    </div>
-  </div>
-
-  <div style="margin-top: 56px;">
+  <div style="margin-top: 0;">
     <div class="pipeline-group-label reveal" style="margin-bottom: 20px; font-family: 'Montserrat', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-sec);">Pipeline Stages</div>
 
     <div class="pipeline-group reveal">
@@ -1211,6 +1150,13 @@ flowchart TD
         <div class="field-row"><span class="field-name">client</span><span class="field-type link">→ Contact</span></div>
         <div class="field-row"><span class="field-name">appointment</span><span class="field-type link">→ Appointment</span></div>
         <div class="field-row"><span class="field-name">items</span><span class="field-type link">→ Inventory</span></div>
+        <div class="field-row">
+          <div class="field-left">
+            <span class="field-name">item_gallery</span>
+            <span class="field-note">Auto-populated from the photos attached to each linked Inventory Item. When items are added to the pull, their photos appear here automatically — no manual upload needed.</span>
+          </div>
+          <span class="field-type">computed</span>
+        </div>
         <div class="field-row"><span class="field-name">return_date</span><span class="field-type">date</span></div>
         <div class="field-row"><span class="field-name">stage</span><span class="field-type">select</span></div>
         <div class="field-row">
@@ -1631,6 +1577,24 @@ flowchart TD
           <td>~$12–$36/yr</td>
         </tr>
         <tr>
+          <td class="crm-feature">DocuSign Business Pro</td>
+          <td>Contract generation + e-signatures — unlimited envelopes (20+ contracts/mo)</td>
+          <td>$25/mo</td>
+          <td>$300/yr</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Clerk (portal auth)</td>
+          <td>Client portal login — free tier covers up to 10,000 MAU</td>
+          <td><span class="crm-yes">$0</span></td>
+          <td><span class="crm-yes">$0</span></td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Portal hosting</td>
+          <td>Next.js client portal — Railway ($5/mo) or Vercel Pro ($20/mo)</td>
+          <td>$5–$20/mo</td>
+          <td>$60–$240/yr</td>
+        </tr>
+        <tr>
           <td class="crm-feature">Slack</td>
           <td>Team workspace + AI agent interface</td>
           <td><span class="crm-yes">$0</span></td>
@@ -1644,24 +1608,94 @@ flowchart TD
         </tr>
         <tr style="background: rgba(242,234,211,0.05);">
           <td class="crm-feature" style="color: var(--cream); border-top: 1px solid var(--cream-border);">Total</td>
-          <td style="border-top: 1px solid var(--cream-border); color: var(--text-sec);">Complete CRM + automation + AI agent stack</td>
-          <td style="border-top: 1px solid var(--cream-border);"><strong style="color: var(--cream); font-size: 16px;">~$54–$58/mo</strong></td>
-          <td style="border-top: 1px solid var(--cream-border);"><strong style="color: var(--cream); font-size: 16px;">~$648–$696/yr</strong></td>
+          <td style="border-top: 1px solid var(--cream-border); color: var(--text-sec);">Complete CRM + automation + AI agent + contracts + client portal</td>
+          <td style="border-top: 1px solid var(--cream-border);"><strong style="color: var(--cream); font-size: 16px;">~$83–$98/mo</strong></td>
+          <td style="border-top: 1px solid var(--cream-border);"><strong style="color: var(--cream); font-size: 16px;">~$996–$1,176/yr</strong></td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <div class="reveal" style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+  <!-- PORTAL HOSTING COMPARISON -->
+  <div style="margin-top: 48px;">
+    <div class="rag-block-label reveal" style="margin-bottom: 20px;">Portal Hosting Options</div>
+    <p class="rag-intro reveal" style="margin-bottom: 24px;">The client portal (Next.js) needs to be hosted somewhere. Both options support a custom domain like <strong style="color: var(--white);">app.divisionpr.com</strong> — the only difference is price and feature depth.</p>
+
+    <div class="crm-table-wrap reveal">
+      <table class="crm-table">
+        <thead>
+          <tr>
+            <th class="crm-feature-col">Feature</th>
+            <th class="crm-recommended">
+              <div class="crm-th-name">Railway</div>
+              <div class="crm-th-tag recommended-tag">Recommended &middot; $5/mo</div>
+            </th>
+            <th>
+              <div class="crm-th-name">Vercel Pro</div>
+              <div class="crm-th-tag">$20/mo</div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="crm-feature">Custom domain</td>
+            <td class="crm-recommended"><span class="crm-yes">Included</span></td>
+            <td><span class="crm-yes">Included</span></td>
+          </tr>
+          <tr>
+            <td class="crm-feature">Next.js support</td>
+            <td class="crm-recommended"><span class="crm-yes">Full — zero config</span></td>
+            <td><span class="crm-yes">Native (built by Vercel)</span></td>
+          </tr>
+          <tr>
+            <td class="crm-feature">Auto-deploy from GitHub</td>
+            <td class="crm-recommended"><span class="crm-yes">Yes</span></td>
+            <td><span class="crm-yes">Yes</span></td>
+          </tr>
+          <tr>
+            <td class="crm-feature">Monthly cost</td>
+            <td class="crm-recommended"><strong style="color: var(--cream);">$5/mo</strong> <span style="color:#555; font-size:11px">(Hobby plan)</span></td>
+            <td>$20/mo <span style="color:#555; font-size:11px">(Pro plan)</span></td>
+          </tr>
+          <tr>
+            <td class="crm-feature">Preview deployments</td>
+            <td class="crm-recommended"><span class="crm-no">No</span></td>
+            <td><span class="crm-yes">Yes — per PR</span></td>
+          </tr>
+          <tr>
+            <td class="crm-feature">Management overhead</td>
+            <td class="crm-recommended">Minimal — simple dashboard</td>
+            <td>Minimal — polished dashboard</td>
+          </tr>
+          <tr>
+            <td class="crm-feature">Edge network</td>
+            <td class="crm-recommended">Global</td>
+            <td>Global (faster cold start)</td>
+          </tr>
+          <tr>
+            <td class="crm-feature">Full stack total</td>
+            <td class="crm-recommended"><strong style="color: var(--cream);">~$83/mo</strong></td>
+            <td>~$98/mo</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="reveal" style="margin-top: 16px; background: var(--cream-dim); border: 1px solid var(--cream-border); border-radius: 10px; padding: 20px 24px; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 300; color: var(--text-sec); line-height: 1.75;">
+      <strong style="color: var(--white);">Recommendation:</strong> Start with <strong style="color: var(--white);">Railway ($5/mo)</strong> — deploys Next.js with zero config, includes a custom domain, and saves $15/mo vs Vercel Pro. Upgrade to Vercel Pro only if the team needs per-PR preview deployments or the tighter Vercel–Next.js native integration.
+    </div>
+  </div>
+
+  <div class="reveal" style="margin-top: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
     <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
       <div style="font-family: 'Phudu', sans-serif; font-size: 18px; color: var(--white); margin-bottom: 10px;">First month</div>
-      <div style="font-family: 'Phudu', sans-serif; font-size: 36px; color: var(--cream); margin-bottom: 8px;">~$52</div>
-      <div style="font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 300; color: var(--text-sec); line-height: 1.6;">Modal's one-time $30 signup credit offsets agent hosting costs entirely in month one — leaving only CRM + n8n.</div>
+      <div style="font-family: 'Phudu', sans-serif; font-size: 36px; color: var(--cream); margin-bottom: 8px;">~$78</div>
+      <div style="font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 300; color: var(--text-sec); line-height: 1.6;">Modal's one-time $30 signup credit offsets agent compute in month one — leaving CRM + n8n + DocuSign + portal hosting (Railway).</div>
     </div>
     <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
       <div style="font-family: 'Phudu', sans-serif; font-size: 18px; color: var(--white); margin-bottom: 10px;">Ongoing monthly</div>
-      <div style="font-family: 'Phudu', sans-serif; font-size: 36px; color: var(--cream); margin-bottom: 8px;">~$54–$58</div>
-      <div style="font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 300; color: var(--text-sec); line-height: 1.6;">Less than $700/year for a fully automated showroom CRM with AI inventory lookup, Google Calendar sync, and a Slack-based assistant.</div>
+      <div style="font-family: 'Phudu', sans-serif; font-size: 36px; color: var(--cream); margin-bottom: 8px;">~$83–$98</div>
+      <div style="font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 300; color: var(--text-sec); line-height: 1.6;">Railway at $83/mo or Vercel Pro at $98/mo — a fully automated showroom CRM with client portal, contracts, AI lookup, and Calendar sync.</div>
     </div>
   </div>
 </section>
@@ -1942,26 +1976,6 @@ flowchart TD
 </div>
 
 <script>
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'dark',
-    themeVariables: {
-      primaryColor: '#1a1a1a',
-      primaryTextColor: '#A1A1AA',
-      primaryBorderColor: '#27272A',
-      lineColor: '#F2EAD3',
-      secondaryColor: '#141414',
-      tertiaryColor: '#1a1910',
-      tertiaryTextColor: '#F2EAD3',
-      edgeLabelBackground: '#111',
-      clusterBkg: '#141414',
-      clusterBorder: '#27272A',
-      fontFamily: 'Montserrat, sans-serif',
-      fontSize: '13px',
-    },
-    flowchart: { curve: 'basis', padding: 24 }
-  });
-
   // scroll reveal
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => {

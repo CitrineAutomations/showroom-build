@@ -3,3 +3,18 @@
 _bmad/
 _bmad-output/
 *.jsonl
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+Thumbs.db
