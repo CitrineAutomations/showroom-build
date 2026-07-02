@@ -33,7 +33,7 @@ async function graphql(url, key, query, variables = {}) {
 async function exportData() {
   console.log('📤 Exporting from local...\n');
 
-  // Fetch companies with just name
+  // Fetch companies
   const companiesData = await graphql(LOCAL_URL, LOCAL_API_KEY, `
     query {
       companies(first: 100) {
@@ -43,7 +43,7 @@ async function exportData() {
   `);
   const companies = companiesData.companies.edges.map(e => e.node);
 
-  // Fetch people with just firstName, lastName
+  // Fetch people
   const peopleData = await graphql(LOCAL_URL, LOCAL_API_KEY, `
     query {
       people(first: 100) {
@@ -53,7 +53,7 @@ async function exportData() {
   `);
   const people = peopleData.people.edges.map(e => e.node);
 
-  // Fetch opportunities with just name
+  // Fetch opportunities
   const oppsData = await graphql(LOCAL_URL, LOCAL_API_KEY, `
     query {
       opportunities(first: 100) {
@@ -63,11 +63,33 @@ async function exportData() {
   `);
   const opportunities = oppsData.opportunities.edges.map(e => e.node);
 
+  // Fetch inventory items
+  const inventoryData = await graphql(LOCAL_URL, LOCAL_API_KEY, `
+    query {
+      inventoryItems(first: 100) {
+        edges { node { id name } }
+      }
+    }
+  `);
+  const inventoryItems = inventoryData.inventoryItems.edges.map(e => e.node);
+
+  // Fetch pulls with full details
+  const pullsData = await graphql(LOCAL_URL, LOCAL_API_KEY, `
+    query {
+      pulls(first: 100) {
+        edges { node { id name stage deliveryNote } }
+      }
+    }
+  `);
+  const pulls = pullsData.pulls.edges.map(e => e.node);
+
   console.log(`   ✅ Companies: ${companies.length}`);
   console.log(`   ✅ People: ${people.length}`);
-  console.log(`   ✅ Opportunities: ${opportunities.length}\n`);
+  console.log(`   ✅ Opportunities: ${opportunities.length}`);
+  console.log(`   ✅ Inventory Items: ${inventoryItems.length}`);
+  console.log(`   ✅ Pulls: ${pulls.length}\n`);
 
-  return { companies, people, opportunities };
+  return { companies, people, opportunities, inventoryItems, pulls };
 }
 
 async function importData(data) {
@@ -116,6 +138,43 @@ async function importData(data) {
     }
   }
   console.log(`      ✅ ${totalImported - data.companies.length - data.people.length}/${data.opportunities.length}\n`);
+
+  // Import inventory items
+  console.log(`   Importing ${data.inventoryItems.length} inventory items...`);
+  for (const item of data.inventoryItems) {
+    try {
+      await graphql(CLOUD_URL, CLOUD_API_KEY, `
+        mutation { createInventoryItem(data: {}) { id } }
+      `);
+      totalImported++;
+    } catch (e) {
+      console.warn(`      ⚠️  ${item.name || 'item'}: ${e.message.substring(0, 40)}`);
+    }
+  }
+  console.log(`      ✅ ${totalImported - data.companies.length - data.people.length - data.opportunities.length}/${data.inventoryItems.length}\n`);
+
+  // Import pulls
+  console.log(`   Importing ${data.pulls.length} pulls...`);
+  for (const pull of data.pulls) {
+    try {
+      const name = pull.name || 'Pull';
+      const stage = pull.stage || 'OUT';
+      const deliveryNote = pull.deliveryNote || '';
+      await graphql(CLOUD_URL, CLOUD_API_KEY, `
+        mutation {
+          createPull(data: {
+            name: "${name.replace(/"/g, '\\"')}"
+            stage: ${stage}
+            deliveryNote: "${deliveryNote.replace(/"/g, '\\"')}"
+          }) { id }
+        }
+      `);
+      totalImported++;
+    } catch (e) {
+      console.warn(`      ⚠️  ${pull.name || 'pull'}: ${e.message.substring(0, 50)}`);
+    }
+  }
+  console.log(`      ✅ ${totalImported - data.companies.length - data.people.length - data.opportunities.length - data.inventoryItems.length}/${data.pulls.length}\n`);
 
   console.log(`✅ Total synced: ${totalImported} records\n`);
 }
