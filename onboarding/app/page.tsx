@@ -8,6 +8,7 @@ import Step1Identity from '@/components/steps/Step1Identity'
 import Step2ClientType from '@/components/steps/Step2ClientType'
 import Step3DriversLicense from '@/components/steps/Step3DriversLicense'
 import Step4Payment from '@/components/steps/Step4Payment'
+import Step4bPullDetails from '@/components/steps/Step4bPullDetails'
 import Step5Photos from '@/components/steps/Step5Photos'
 import SuccessScreen from '@/components/SuccessScreen'
 
@@ -17,6 +18,7 @@ export interface FormData {
   firstName: string
   lastName: string
   email: string
+  phone: string
   contactId: string | null
   hasCardOnFile: boolean
   existingStripeCustomerId: string | null
@@ -24,10 +26,11 @@ export interface FormData {
   dlFileIds: string[]
   stripeCustomerId: string | null
   cardKept: boolean
+  pullId: string | null
   photoFileIds: string[]
 }
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 6
 
 const slideVariants = {
   enterForward:  { x: 24, opacity: 0 },
@@ -46,6 +49,7 @@ export default function OnboardingPage() {
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     contactId: null,
     hasCardOnFile: false,
     existingStripeCustomerId: null,
@@ -53,6 +57,7 @@ export default function OnboardingPage() {
     dlFileIds: [],
     stripeCustomerId: null,
     cardKept: false,
+    pullId: null,
     photoFileIds: [],
   })
 
@@ -70,7 +75,7 @@ export default function OnboardingPage() {
     setStep(s => s - 1)
   }
 
-  function handleStep1Complete(data: { firstName: string; lastName: string; email: string; contactId: string; hasCardOnFile: boolean; existingStripeCustomerId: string | null }) {
+  function handleStep1Complete(data: { firstName: string; lastName: string; email: string; phone: string; contactId: string; hasCardOnFile: boolean; existingStripeCustomerId: string | null }) {
     updateForm(data)
     goNext()
   }
@@ -96,6 +101,11 @@ export default function OnboardingPage() {
     goNext()
   }
 
+  function handlePullDetailsComplete(pullId: string) {
+    updateForm({ pullId })
+    goNext()
+  }
+
   function handleComplete(photoFileIds: string[]) {
     updateForm({ photoFileIds })
     setShowSuccess(true)
@@ -106,6 +116,7 @@ export default function OnboardingPage() {
       firstName: '',
       lastName: '',
       email: '',
+      phone: '',
       contactId: null,
       hasCardOnFile: false,
       existingStripeCustomerId: null,
@@ -113,6 +124,7 @@ export default function OnboardingPage() {
       dlFileIds: [],
       stripeCustomerId: null,
       cardKept: false,
+      pullId: null,
       photoFileIds: [],
     })
     setStep(1)
@@ -153,7 +165,7 @@ export default function OnboardingPage() {
         >
           {step === 1 && (
             <Step1Identity
-              initialData={{ firstName: formData.firstName, lastName: formData.lastName, email: formData.email }}
+              initialData={{ firstName: formData.firstName, lastName: formData.lastName, email: formData.email, phone: formData.phone }}
               onComplete={handleStep1Complete}
             />
           )}
@@ -183,8 +195,16 @@ export default function OnboardingPage() {
             />
           )}
           {step === 5 && (
+            <Step4bPullDetails
+              contactId={formData.contactId}
+              onComplete={handlePullDetailsComplete}
+              onBack={goBack}
+            />
+          )}
+          {step === 6 && (
             <Step5Photos
               contactId={formData.contactId}
+              pullId={formData.pullId}
               onComplete={handleComplete}
               onBack={goBack}
             />

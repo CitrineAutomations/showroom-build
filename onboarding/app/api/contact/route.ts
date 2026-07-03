@@ -3,7 +3,7 @@ import { findContactByEmail, createContact, updateContact } from '@/lib/twenty'
 
 export async function POST(req: NextRequest) {
   try {
-    const { fullName, email, clientType } = await req.json()
+    const { fullName, email, phone, clientType } = await req.json()
     if (!fullName || !email) {
       return NextResponse.json({ error: 'fullName and email are required' }, { status: 400 })
     }
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     let contact = await findContactByEmail(email)
 
     if (contact) {
-      await updateContact(contact.id, { clientType })
+      await updateContact(contact.id, { clientType, phone: phone || undefined })
       return NextResponse.json({
         contactId: contact.id,
         hasCardOnFile: !!contact.stripeCustomerId,
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    contact = await createContact(fullName, email, clientType)
+    contact = await createContact(fullName, email, clientType, phone)
     return NextResponse.json({
       contactId: contact.id,
       hasCardOnFile: false,

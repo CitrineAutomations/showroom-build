@@ -73,6 +73,7 @@ export interface TwentyContact {
   id: string
   name: { firstName: string; lastName: string }
   emails: { primaryEmail: string }
+  phones: { primaryPhoneNumber: string } | null
   clientType: string | null
   stripeCustomerId: string | null
 }
@@ -81,30 +82,50 @@ export async function findContactByEmail(email: string): Promise<TwentyContact |
   const data = await gql<{ people: { edges: { node: TwentyContact }[] } }>(`
     query FindByEmail($email: StringFilter!) {
       people(filter: { emails: { primaryEmail: { eq: $email } } }) {
-        edges { node { id name { firstName lastName } emails { primaryEmail } clientType stripeCustomerId } }
+        edges { node { id name { firstName lastName } emails { primaryEmail } phones { primaryPhoneNumber } clientType stripeCustomerId } }
       }
     }
   `, { email: { eq: email } })
   return data.people.edges[0]?.node ?? null
 }
 
-export async function createContact(fullName: string, email: string, clientType: string): Promise<TwentyContact> {
+export async function createContact(fullName: string, email: string, clientType: string, phone?: string): Promise<TwentyContact> {
   const [firstName, ...rest] = fullName.trim().split(' ')
   const lastName = rest.join(' ') || ''
   const data = await gql<{ createPerson: TwentyContact }>(`
     mutation CreateContact($input: PersonCreateInput!) {
-      createPerson(data: $input) { id name { firstName lastName } emails { primaryEmail } clientType stripeCustomerId }
+      createPerson(data: $input) { id name { firstName lastName } emails { primaryEmail } phones { primaryPhoneNumber } clientType stripeCustomerId }
     }
-  `, { input: { name: { firstName, lastName }, emails: { primaryEmail: email }, clientType } })
+  `, {
+    input: {
+      name: { firstName, lastName },
+      emails: { primaryEmail: email },
+      ...(phone ? { phones: { primaryPhoneNumber: phone } } : {}),
+      clientType,
+    },
+  })
   return data.createPerson
 }
 
-export async function updateContact(id: string, patch: { clientType?: string; stripeCustomerId?: string }): Promise<void> {
+export async function updateContact(id: string, patch: { clientType?: string; stripeCustomerId?: string; phone?: string }): Promise<void> {
+  const { phone, ...rest } = patch
+  const input: Record<string, unknown> = { ...rest }
+  if (phone) {
+    input.phones = { primaryPhoneNumber: phone }
+  }
+  if (patch.stripeCustomerId) {
+    const stripeMode = patch.stripeCustomerId.startsWith('cus_') && process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_')
+      ? 'live' : 'test'
+    input.stripeDashboardLink = {
+      primaryLinkUrl: `https://dashboard.stripe.com/${stripeMode === 'test' ? 'test/' : ''}customers/${patch.stripeCustomerId}`,
+      primaryLinkLabel: 'View in Stripe',
+    }
+  }
   await gql(`
     mutation UpdateContact($id: ID!, $input: PersonUpdateInput!) {
       updatePerson(id: $id, data: $input) { id }
     }
-  `, { id, input: patch })
+  `, { id, input })
 }
 
 export async function getActivePullForContact(contactId: string): Promise<{ id: string } | null> {
@@ -114,6 +135,17 @@ export async function getActivePullForContact(contactId: string): Promise<{ id: 
     }
   `, { filter: { client: { id: { eq: contactId } }, stage: { in: ['OUT', 'DUE_SOON', 'OVERDUE'] } } })
   return data.pulls.edges[0]?.node ?? null
+}
+
+// repAssigned intentionally left unset — no rep auth in onboarding yet (Clerk login planned separately).
+// Reps must assign themselves on the Pull manually in Twenty until that ships.
+export async function createPull(contactId: string, returnDate: string): Promise<{ id: string }> {
+  const data = await gql<{ createPull: { id: string } }>(`
+    mutation CreatePull($input: PullCreateInput!) {
+      createPull(data: $input) { id }
+    }
+  `, { input: { clientIdId: contactId, stage: 'VISITED', returnDate } })
+  return data.createPull
 }
 
 export async function uploadFileToTwenty(arrayBuffer: ArrayBuffer, filename: string, mimeType: string): Promise<string> {

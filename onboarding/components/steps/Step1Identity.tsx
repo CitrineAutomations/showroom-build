@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { AlertCircle, Loader2 } from 'lucide-react'
 
 interface Props {
-  initialData: { firstName: string; lastName: string; email: string }
+  initialData: { firstName: string; lastName: string; email: string; phone: string }
   onComplete: (data: {
     firstName: string
     lastName: string
     email: string
+    phone: string
     contactId: string
     hasCardOnFile: boolean
     existingStripeCustomerId: string | null
@@ -19,6 +20,7 @@ export default function Step1Identity({ initialData, onComplete }: Props) {
   const [firstName, setFirstName] = useState(initialData.firstName)
   const [lastName, setLastName] = useState(initialData.lastName)
   const [email, setEmail] = useState(initialData.email)
+  const [phone, setPhone] = useState(initialData.phone)
   const [errors, setErrors] = useState<{ firstName?: string; lastName?: string; email?: string }>({})
   const [apiError, setApiError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -43,7 +45,7 @@ export default function Step1Identity({ initialData, onComplete }: Props) {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email: email.trim(), clientType: null }),
+        body: JSON.stringify({ fullName, email: email.trim(), phone: phone.trim(), clientType: null }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'CRM error')
@@ -51,6 +53,7 @@ export default function Step1Identity({ initialData, onComplete }: Props) {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         email: email.trim(),
+        phone: phone.trim(),
         contactId: data.contactId,
         hasCardOnFile: data.hasCardOnFile,
         existingStripeCustomerId: data.existingStripeCustomerId,
@@ -124,6 +127,20 @@ export default function Step1Identity({ initialData, onComplete }: Props) {
             {errors.email && (
               <p id="email-error" className="field-error" role="alert">{errors.email}</p>
             )}
+          </div>
+
+          <div>
+            <label htmlFor="phone" className="field-label">Phone Number <span style={{ opacity: 0.6 }}>(optional)</span></label>
+            <input
+              id="phone"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
+              placeholder="(555) 123-4567"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              className="field-input"
+            />
           </div>
 
           {apiError && (
