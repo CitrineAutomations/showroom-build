@@ -1,0 +1,132 @@
+{
+  "name": "AUTO-06 Overdue Daily",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "30 8 * * *" }]
+        }
+      },
+      "id": "c1d2e3f4-a5b6-7890-cdef-111122223333",
+      "name": "Daily 8:30 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { today: new Date().toISOString() } }];"
+      },
+      "id": "d2e3f4a5-b6c7-8901-def0-222233334444",
+      "name": "Today",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"query PullsOverdue($today: DateTime!) { pulls(filter: { stage: { in: [OUT, DUE_SOON] }, returnDate: { lt: $today } }) { edges { node { id name returnDate client { name { firstName lastName } emails { primaryEmail } } repAssigned { emails { primaryEmail } } } } } }\",\n  \"variables\": { \"today\": \"{{ $json.today }}\" }\n}",
+        "options": {}
+      },
+      "id": "e3f4a5b6-c7d8-9012-ef01-333344445555",
+      "name": "Query Overdue Pulls",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const edges = $input.first().json.data?.pulls?.edges ?? [];\nif (!edges.length) return [];\nreturn edges.map(e => ({ json: e.node }));"
+      },
+      "id": "f4a5b6c7-d8e9-0123-f012-444455556666",
+      "name": "Split Pulls",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"mutation UpdatePull($id: ID!, $input: PullUpdateInput!) { updatePull(id: $id, data: $input) { id stage } }\",\n  \"variables\": { \"id\": \"{{ $json.id }}\", \"input\": { \"stage\": \"OVERDUE\" } }\n}",
+        "options": {}
+      },
+      "id": "a5b6c7d8-e9f0-1234-0123-555566667777",
+      "name": "Set Stage Overdue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Split Pulls').item.json.repAssigned?.emails?.primaryEmail }},{{ $env.OWNER_EMAIL }}",
+        "subject": "=OVERDUE: {{ $('Split Pulls').item.json.client.name.firstName }} {{ $('Split Pulls').item.json.client.name.lastName }}",
+        "message": "=Pull {{ $('Split Pulls').item.json.name }} was due {{ $('Split Pulls').item.json.returnDate }} and has not been returned.\\n\\nClient: {{ $('Split Pulls').item.json.client.emails.primaryEmail }}\\n\\nPlease follow up immediately.",
+        "options": {}
+      },
+      "id": "b6c7d8e9-f0a1-2345-1234-666677778888",
+      "name": "Escalation Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1200, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Gmail — Division PR"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## AUTO-06: Overdue\n\n**Trigger:** Daily cron (runs after AUTO-05)\n\n**Logic:** Pulls in Out/Due Soon past return date\n\n**Actions:**\n1. Stage → Overdue\n2. Escalation email to rep + owner",
+        "height": 180,
+        "width": 300
+      },
+      "id": "c7d8e9f0-a1b2-3456-2345-777788889999",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-40, 100]
+    }
+  ],
+  "connections": {
+    "Daily 8:30 AM": {
+      "main": [[{ "node": "Today", "type": "main", "index": 0 }]]
+    },
+    "Today": {
+      "main": [[{ "node": "Query Overdue Pulls", "type": "main", "index": 0 }]]
+    },
+    "Query Overdue Pulls": {
+      "main": [[{ "node": "Split Pulls", "type": "main", "index": 0 }]]
+    },
+    "Split Pulls": {
+      "main": [[{ "node": "Set Stage Overdue", "type": "main", "index": 0 }]]
+    },
+    "Set Stage Overdue": {
+      "main": [[{ "node": "Escalation Email", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "division-pr" }, { "name": "pull-track" }]
+}

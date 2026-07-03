@@ -1,0 +1,115 @@
+{
+  "name": "AUTO-09 Drive Inventory Watcher",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": { "item": [{ "mode": "everyMinute" }] },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_DRIVE_INVENTORY_FOLDER_ID }}",
+          "mode": "id"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "66666666-6666-4666-8666-666666666601",
+      "name": "Drive File Created",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [0, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": { "id": "REPLACE_WITH_CREDENTIAL_ID", "name": "Google Drive — Division PR" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse: Designer_Type_Color_Season_Year_ItemID.ext\nconst name = $input.first().json.name || '';\nconst match = name.match(/^(.+?)_(.+?)_(.+?)_(SS|FW)_(\\d{4})_(\\d+)\\.(jpg|jpeg|png)$/i);\nif (!match) {\n  throw new Error(`Filename does not match convention: ${name}`);\n}\nconst [, designer, itemType, color, season, year, itemId, ext] = match;\nreturn [{\n  json: {\n    filename: name,\n    designer: designer.replace(/-/g, ' '),\n    itemType: itemType.replace(/-/g, ' '),\n    color: color.replace(/-/g, ' '),\n    season,\n    year,\n    itemId,\n    photoUrl: $input.first().json.webViewLink || $input.first().json.id\n  }\n}];"
+      },
+      "id": "66666666-6666-4666-8666-666666666602",
+      "name": "Parse Filename",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEETS_INVENTORY_ID }}",
+          "mode": "id"
+        },
+        "sheetName": { "__rl": true, "value": "Inventory", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Designer": "={{ $json.designer }}",
+            "Item Type": "={{ $json.itemType }}",
+            "Color": "={{ $json.color }}",
+            "Season": "={{ $json.season }}",
+            "Year": "={{ $json.year }}",
+            "Item ID": "={{ $json.itemId }}",
+            "Status": "Available",
+            "Photo": "={{ $json.photoUrl }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "66666666-6666-4666-8666-666666666603",
+      "name": "Append to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [480, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "REPLACE_WITH_CREDENTIAL_ID", "name": "Google Sheets — Division PR" }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"mutation CreateInventoryItem($input: InventoryItemCreateInput!) { createInventoryItem(data: $input) { id itemId status } }\",\n  \"variables\": {\n    \"input\": {\n      \"designer\": \"{{ $('Parse Filename').item.json.designer }}\",\n      \"itemType\": \"{{ $('Parse Filename').item.json.itemType }}\",\n      \"color\": \"{{ $('Parse Filename').item.json.color }}\",\n      \"season\": \"{{ $('Parse Filename').item.json.season }}\",\n      \"itemId\": \"{{ $('Parse Filename').item.json.itemId }}\",\n      \"status\": \"AVAILABLE\"\n    }\n  }\n}",
+        "options": {}
+      },
+      "id": "66666666-6666-4666-8666-666666666604",
+      "name": "Create CRM Record",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "content": "## AUTO-09\n\nNaming convention:\n`Designer_Type_Color_SS_2024_001.jpg`\n\nAlso handles renames — add a second Drive trigger for `fileUpdated` if needed.",
+        "height": 120,
+        "width": 280
+      },
+      "id": "66666666-6666-4666-8666-666666666605",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-20, 120]
+    }
+  ],
+  "connections": {
+    "Drive File Created": { "main": [[{ "node": "Parse Filename", "type": "main", "index": 0 }]] },
+    "Parse Filename": {
+      "main": [[
+        { "node": "Append to Sheet", "type": "main", "index": 0 },
+        { "node": "Create CRM Record", "type": "main", "index": 0 }
+      ]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "division-pr" }, { "name": "inventory" }]
+}

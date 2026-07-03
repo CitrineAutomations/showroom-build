@@ -1,0 +1,84 @@
+{
+  "name": "AUTO-02 Rep Morning Brief",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 7 * * *" }]
+        }
+      },
+      "id": "44444444-4444-4444-8444-444444444401",
+      "name": "Daily 7AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const start = new Date();\nstart.setHours(0, 0, 0, 0);\nconst end = new Date(start);\nend.setHours(23, 59, 59, 999);\nreturn [{ json: { start: start.toISOString(), end: end.toISOString() } }];"
+      },
+      "id": "44444444-4444-4444-8444-444444444402",
+      "name": "Today Window",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"query AppointmentsToday($start: DateTime!, $end: DateTime!) { appointments(filter: { status: { eq: CONFIRMED }, dateTime: { gte: $start, lte: $end } }) { edges { node { id dateTime lookingFor client { name { firstName lastName } reliabilityScore } repAssigned { emails { primaryEmail } name { firstName lastName } } } } } } }\",\n  \"variables\": { \"start\": \"{{ $json.start }}\", \"end\": \"{{ $json.end }}\" }\n}",
+        "options": {}
+      },
+      "id": "44444444-4444-4444-8444-444444444403",
+      "name": "Query Today Appointments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const edges = $input.first().json.data?.appointments?.edges ?? [];\nif (!edges.length) return [];\n\nconst byRep = {};\nfor (const { node: appt } of edges) {\n  const repEmail = appt.repAssigned?.emails?.primaryEmail;\n  if (!repEmail) continue;\n  if (!byRep[repEmail]) {\n    byRep[repEmail] = { repEmail, repName: `${appt.repAssigned.name.firstName} ${appt.repAssigned.name.lastName}`, appointments: [] };\n  }\n  byRep[repEmail].appointments.push(appt);\n}\n\nreturn Object.values(byRep).map(rep => ({ json: rep }));"
+      },
+      "id": "44444444-4444-4444-8444-444444444404",
+      "name": "Group By Rep",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.repEmail }}",
+        "subject": "=Today's appointments — {{ $json.appointments.length }} scheduled",
+        "message": "=Good morning {{ $json.repName.split(' ')[0] }},\\n\\n{{ $json.appointments.map(a => `• ${a.dateTime} — ${a.client.name.firstName} ${a.client.name.lastName} (reliability: ${a.client.reliabilityScore ?? 'n/a'})\\n  Looking for: ${a.lookingFor || 'Not specified'}`).join('\\n\\n') }}\\n\\nDivision PR",
+        "options": {}
+      },
+      "id": "44444444-4444-4444-8444-444444444405",
+      "name": "Send Rep Brief",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [960, 300],
+      "credentials": {
+        "gmailOAuth2": { "id": "REPLACE_WITH_CREDENTIAL_ID", "name": "Gmail — Division PR" }
+      }
+    }
+  ],
+  "connections": {
+    "Daily 7AM": { "main": [[{ "node": "Today Window", "type": "main", "index": 0 }]] },
+    "Today Window": { "main": [[{ "node": "Query Today Appointments", "type": "main", "index": 0 }]] },
+    "Query Today Appointments": { "main": [[{ "node": "Group By Rep", "type": "main", "index": 0 }]] },
+    "Group By Rep": { "main": [[{ "node": "Send Rep Brief", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "division-pr" }, { "name": "appointment-track" }]
+}

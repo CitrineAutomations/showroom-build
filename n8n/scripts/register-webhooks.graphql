@@ -1,0 +1,45 @@
+# Register Twenty webhooks pointing at n8n production URLs.
+# Run via Twenty GraphQL playground or an n8n HTTP Request node.
+# Replace {{N8N_WEBHOOK_URL}} with each workflow's production webhook URL.
+
+mutation RegisterAppointmentWebhook {
+  createWebhook(input: {
+    targetUrl: "{{N8N_AUTO01_WEBHOOK_URL}}"
+    operations: ["appointment.updated"]
+    description: "AUTO-01: Appointment confirmed → email + calendar"
+  }) {
+    id
+    targetUrl
+    secret
+  }
+}
+
+mutation RegisterPullWebhook {
+  createWebhook(input: {
+    targetUrl: "{{N8N_PULL_WEBHOOK_URL}}"
+    operations: ["pull.updated"]
+    description: "AUTO-03/04/07/08: Pull stage and return date changes"
+  }) {
+    id
+    targetUrl
+    secret
+  }
+}
+
+# List existing webhooks
+query ListWebhooks {
+  webhooks {
+    id
+    targetUrl
+    operations
+    description
+    createdAt
+  }
+}
+
+# Delete a webhook (if re-registering)
+mutation DeleteWebhook {
+  deleteWebhook(input: { id: "{{WEBHOOK_ID}}" }) {
+    id
+  }
+}

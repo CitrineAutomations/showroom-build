@@ -1,0 +1,112 @@
+{
+  "name": "AUTO-11 Portal Account",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "onboarding-complete",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "77777777-7777-4777-8777-777777777701",
+      "name": "Onboarding Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "77777777-7777-4777-8777-777777777701"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "secret-match",
+              "leftValue": "={{ $json.headers['x-webhook-secret'] }}",
+              "rightValue": "={{ $env.ONBOARDING_WEBHOOK_SECRET }}",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "77777777-7777-4777-8777-777777777702",
+      "name": "Verify Secret",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.clerk.com/v1/users",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.CLERK_SECRET_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"email_address\": [\"{{ $json.body.email }}\"],\n  \"first_name\": \"{{ $json.body.firstName }}\",\n  \"last_name\": \"{{ $json.body.lastName }}\",\n  \"public_metadata\": { \"twentyContactId\": \"{{ $json.body.contactId }}\" },\n  \"skip_password_requirement\": true\n}",
+        "options": {}
+      },
+      "id": "77777777-7777-4777-8777-777777777703",
+      "name": "Create Clerk User",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true, \"clerkUserId\": \"{{ $json.id }}\" }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "77777777-7777-4777-8777-777777777704",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"Unauthorized\" }",
+        "options": { "responseCode": 401 }
+      },
+      "id": "77777777-7777-4777-8777-777777777705",
+      "name": "Unauthorized Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 420]
+    },
+    {
+      "parameters": {
+        "content": "## AUTO-11\n\nCalled by onboarding app when client setup completes.\n\nSets Clerk `publicMetadata.twentyContactId` for portal auth.\n\nWire from onboarding SuccessScreen or a new API route.",
+        "height": 140,
+        "width": 300
+      },
+      "id": "77777777-7777-4777-8777-777777777706",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-20, 100]
+    }
+  ],
+  "connections": {
+    "Onboarding Webhook": { "main": [[{ "node": "Verify Secret", "type": "main", "index": 0 }]] },
+    "Verify Secret": {
+      "main": [
+        [{ "node": "Create Clerk User", "type": "main", "index": 0 }],
+        [{ "node": "Unauthorized Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Clerk User": { "main": [[{ "node": "Success Response", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "division-pr" }, { "name": "portal" }]
+}

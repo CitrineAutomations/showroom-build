@@ -1,0 +1,117 @@
+{
+  "name": "AUTO-08 Reliability Score",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "twenty-pull-closed",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "55555555-5555-4555-8555-555555555501",
+      "name": "Twenty Pull Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "55555555-5555-4555-8555-555555555501"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "closed",
+              "leftValue": "={{ $json.body.record.stage }}",
+              "rightValue": "CLOSED",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "55555555-5555-4555-8555-555555555502",
+      "name": "Stage Closed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"query ClosedPullsForClient($clientId: ID!) { pulls(filter: { client: { id: { eq: $clientId } }, stage: { eq: CLOSED } }) { edges { node { id returnDate creditGiven } } } }\",\n  \"variables\": { \"clientId\": \"{{ $('Twenty Pull Webhook').item.json.body.record.clientId }}\" }\n}",
+        "options": {}
+      },
+      "id": "55555555-5555-4555-8555-555555555503",
+      "name": "Fetch Client Pull History",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 200],
+      "notes": "Adjust clientId path to match Twenty webhook payload shape (may be record.client.id)."
+    },
+    {
+      "parameters": {
+        "jsCode": "const pulls = $input.first().json.data?.pulls?.edges?.map(e => e.node) ?? [];\nif (!pulls.length) return [{ json: { score: 5, clientId: $('Twenty Pull Webhook').first().json.body.record.clientId } }];\n\nconst total = pulls.length;\nconst credited = pulls.filter(p => p.creditGiven).length;\n// Placeholder scoring — refine with on-time return + damage flags when fields exist\nconst creditRate = credited / total;\nconst score = Math.max(1, Math.min(10, Math.round(5 + creditRate * 5)));\n\nreturn [{ json: { score, clientId: $('Twenty Pull Webhook').first().json.body.record.clientId } }];"
+      },
+      "id": "55555555-5555-4555-8555-555555555504",
+      "name": "Calculate Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"mutation UpdateContact($id: ID!, $input: PersonUpdateInput!) { updatePerson(id: $id, data: $input) { id reliabilityScore } }\",\n  \"variables\": { \"id\": \"{{ $json.clientId }}\", \"input\": { \"reliabilityScore\": {{ $json.score }} } }\n}",
+        "options": {}
+      },
+      "id": "55555555-5555-4555-8555-555555555505",
+      "name": "Update Contact Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 200]
+    },
+    {
+      "parameters": {
+        "content": "## AUTO-08\n\nRecalculates reliability score (1–10) when pull closes.\n\n**Refine scoring** in Calculate Score node to include:\n- On-time return rate (returnDate vs actual)\n- Damage/loss flags\n- Credit given rate",
+        "height": 160,
+        "width": 300
+      },
+      "id": "55555555-5555-4555-8555-555555555506",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-20, 80]
+    }
+  ],
+  "connections": {
+    "Twenty Pull Webhook": { "main": [[{ "node": "Stage Closed?", "type": "main", "index": 0 }]] },
+    "Stage Closed?": { "main": [[{ "node": "Fetch Client Pull History", "type": "main", "index": 0 }], []] },
+    "Fetch Client Pull History": { "main": [[{ "node": "Calculate Score", "type": "main", "index": 0 }]] },
+    "Calculate Score": { "main": [[{ "node": "Update Contact Score", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "division-pr" }, { "name": "pull-track" }]
+}

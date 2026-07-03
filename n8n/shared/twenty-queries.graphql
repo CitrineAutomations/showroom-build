@@ -1,0 +1,152 @@
+# Division PR — Twenty CRM GraphQL queries used by n8n workflows
+# POST each operation to: {{TWENTY_API_URL}}/graphql
+# Header: Authorization: Bearer {{TWENTY_API_KEY}}
+
+# ── Pulls ─────────────────────────────────────────────────────────────────────
+
+query GetPull($id: ID!) {
+  pull(filter: { id: { eq: $id } }) {
+    id
+    name
+    stage
+    returnDate
+    calendarEventId
+    client {
+      id
+      name { firstName lastName }
+      emails { primaryEmail }
+      phones { primaryPhoneNumber }
+    }
+    repAssigned {
+      id
+      name { firstName lastName }
+      emails { primaryEmail }
+    }
+    items {
+      edges {
+        node {
+          id
+          itemId
+          designer
+          itemType
+          color
+          status
+        }
+      }
+    }
+  }
+}
+
+query PullsDueSoon($today: DateTime!, $threshold: DateTime!) {
+  pulls(
+    filter: {
+      stage: { eq: OUT }
+      returnDate: { gte: $today, lte: $threshold }
+    }
+  ) {
+    edges {
+      node {
+        id
+        name
+        returnDate
+        client {
+          id
+          name { firstName lastName }
+          emails { primaryEmail }
+        }
+        repAssigned {
+          emails { primaryEmail }
+        }
+      }
+    }
+  }
+}
+
+query PullsOverdue($today: DateTime!) {
+  pulls(
+    filter: {
+      stage: { in: [OUT, DUE_SOON] }
+      returnDate: { lt: $today }
+    }
+  ) {
+    edges {
+      node {
+        id
+        name
+        returnDate
+        client {
+          id
+          name { firstName lastName }
+          emails { primaryEmail }
+        }
+        repAssigned {
+          emails { primaryEmail }
+        }
+      }
+    }
+  }
+}
+
+query AppointmentsToday($start: DateTime!, $end: DateTime!) {
+  appointments(
+    filter: {
+      status: { eq: CONFIRMED }
+      dateTime: { gte: $start, lte: $end }
+    }
+  ) {
+    edges {
+      node {
+        id
+        dateTime
+        lookingFor
+        client {
+          id
+          name { firstName lastName }
+          reliabilityScore
+        }
+        repAssigned {
+          emails { primaryEmail }
+        }
+        pull {
+          edges {
+            node {
+              id
+              stage
+              coverageEvent
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+mutation UpdatePull($id: ID!, $input: PullUpdateInput!) {
+  updatePull(id: $id, data: $input) {
+    id
+    stage
+    returnDate
+    calendarEventId
+  }
+}
+
+mutation UpdateInventoryItem($id: ID!, $input: InventoryItemUpdateInput!) {
+  updateInventoryItem(id: $id, data: $input) {
+    id
+    status
+  }
+}
+
+mutation UpdateContact($id: ID!, $input: PersonUpdateInput!) {
+  updatePerson(id: $id, data: $input) {
+    id
+    reliabilityScore
+  }
+}
+
+mutation UpdateAppointment($id: ID!, $input: AppointmentUpdateInput!) {
+  updateAppointment(id: $id, data: $input) {
+    id
+    calendarEventId
+  }
+}
