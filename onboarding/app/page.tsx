@@ -12,6 +12,7 @@ import Step4Payment from '@/components/steps/Step4Payment'
 import Step4bPullDetails from '@/components/steps/Step4bPullDetails'
 import Step5Photos from '@/components/steps/Step5Photos'
 import SuccessScreen from '@/components/SuccessScreen'
+import ReturnFlow from '@/components/ReturnFlow'
 
 export type ClientType = 'RENTAL' | 'PUBLIC_RELATIONS'
 
@@ -49,6 +50,7 @@ export default function OnboardingPage() {
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
   const [showSuccess, setShowSuccess] = useState(false)
   const [showConflict, setShowConflict] = useState(false)
+  const [showReturn, setShowReturn] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     lastName: '',
@@ -174,6 +176,17 @@ export default function OnboardingPage() {
     )
   }
 
+  if (showReturn) {
+    return (
+      <MotionConfig reducedMotion="user">
+        <div className="wordmark-bar">
+          <span className="wordmark">DIVISION PR</span>
+        </div>
+        <ReturnFlow onDone={() => setShowReturn(false)} />
+      </MotionConfig>
+    )
+  }
+
   const enterVariant = direction === 'forward' ? 'enterForward' : 'enterBackward'
   const exitVariant  = direction === 'forward' ? 'exitForward'  : 'exitBackward'
 
@@ -198,6 +211,7 @@ export default function OnboardingPage() {
             <Step0ClientRouter
               onNewClient={handleNewClient}
               onExistingClientSelected={handleExistingClientSelected}
+              onReturn={() => setShowReturn(true)}
             />
           )}
           {step === 2 && (

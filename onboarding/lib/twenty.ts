@@ -195,6 +195,87 @@ export async function getActivePullForContact(contactId: string): Promise<{ id: 
   }
 }
 
+export interface PullItem {
+  id: string
+  itemId: string
+  designer: string
+  itemType: string
+  color: string
+  status: string
+}
+
+export async function getOpenPullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string; items: PullItem[] } | null> {
+  const data = await gql<{ pulls: { edges: { node: {
+    id: string
+    returnDate: string
+    stage: string
+    items: { edges: { node: PullItem }[] }
+  } }[] } }>(`
+    query OpenPull($filter: PullFilterInput!) {
+      pulls(filter: $filter) {
+        edges {
+          node {
+            id
+            returnDate
+            stage
+            items {
+              edges { node { id itemId designer itemType color status } }
+            }
+          }
+        }
+      }
+    }
+  `, { filter: { clientId: { id: { eq: contactId } }, stage: { in: ['VISITED', 'OUT', 'DUE_SOON', 'OVERDUE'] } } })
+  const node = data.pulls.edges[0]?.node
+  if (!node) return null
+  return {
+    id: node.id,
+    returnDate: node.returnDate,
+    stage: node.stage,
+    items: node.items.edges.map(e => e.node),
+  }
+}
+
+export type ItemCondition = 'AVAILABLE' | 'DAMAGED' | 'MISSING'
+
+export async function returnPullItems(pullId: string, items: { id: string; condition: ItemCondition }[]): Promise<{ stage: string }> {
+  for (const { id, condition } of items) {
+    await gql(`
+      mutation UpdateInventoryItem($id: ID!, $input: InventoryItemUpdateInput!) {
+        updateInventoryItem(id: $id, data: $input) { id status }
+      }
+    `, { id, input: { status: condition } })
+  }
+
+  const pull = await getPullItemsById(pullId)
+  const allReturned = pull.items.every(item => item.status !== 'OUT')
+
+  if (allReturned) {
+    await gql(`
+      mutation UpdatePull($id: ID!, $input: PullUpdateInput!) {
+        updatePull(id: $id, data: $input) { id stage }
+      }
+    `, { id: pullId, input: { stage: 'RETURNED' } })
+    return { stage: 'RETURNED' }
+  }
+
+  return { stage: pull.stage }
+}
+
+async function getPullItemsById(pullId: string): Promise<{ stage: string; items: PullItem[] }> {
+  const data = await gql<{ pull: { stage: string; items: { edges: { node: PullItem }[] } } }>(`
+    query PullItemsById($id: ID!) {
+      pull(filter: { id: { eq: $id } }) {
+        stage
+        items {
+          edges { node { id itemId designer itemType color status } }
+        }
+      }
+    }
+  `, { id: pullId })
+  return { stage: data.pull.stage, items: data.pull.items.edges.map(e => e.node) }
+}
+
 // repAssigned intentionally left unset — no rep auth in onboarding yet (Clerk login planned separately).
 // Reps must assign themselves on the Pull manually in Twenty until that ships.
 export async function createPull(contactId: string, returnDate: string, clientName: string): Promise<{ id: string }> {

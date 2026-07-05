@@ -30,9 +30,10 @@ interface ExistingClientData {
 interface Props {
   onNewClient: () => void
   onExistingClientSelected: (data: ExistingClientData) => void
+  onReturn: () => void
 }
 
-export default function Step0ClientRouter({ onNewClient, onExistingClientSelected }: Props) {
+export default function Step0ClientRouter({ onNewClient, onExistingClientSelected, onReturn }: Props) {
   const [mode, setMode] = useState<'choose' | 'search'>('choose')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
@@ -106,11 +107,11 @@ export default function Step0ClientRouter({ onNewClient, onExistingClientSelecte
     return (
       <div className="step-content">
         <p className="section-label">Welcome</p>
-        <h1 className="step-heading">New or Existing Client?</h1>
+        <h1 className="step-heading">What Are You Here For?</h1>
 
         <div
           role="radiogroup"
-          aria-label="Client type"
+          aria-label="Client action"
           style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}
         >
           <button role="radio" aria-checked={false} className="option-card" onClick={onNewClient}>
@@ -120,6 +121,10 @@ export default function Step0ClientRouter({ onNewClient, onExistingClientSelecte
           <button role="radio" aria-checked={false} className="option-card" onClick={() => setMode('search')}>
             <span className="option-card-label">Existing Client</span>
             <span className="option-card-sublabel">Find and continue an existing record</span>
+          </button>
+          <button role="radio" aria-checked={false} className="option-card" onClick={onReturn}>
+            <span className="option-card-label">Return</span>
+            <span className="option-card-sublabel">Check in items from a pull</span>
           </button>
         </div>
       </div>
