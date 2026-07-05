@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getActivePullForContact, attachFilesToPull, attachFilesToContact } from '@/lib/twenty'
+import { attachFilesToPull, attachFilesToContact } from '@/lib/twenty'
 
 export async function POST(req: NextRequest) {
   try {
-    const { contactId, fileIds } = await req.json()
+    const { contactId, pullId, fileIds } = await req.json()
     if (!contactId || !Array.isArray(fileIds)) {
       return NextResponse.json({ error: 'contactId and fileIds required' }, { status: 400 })
     }
-    if (fileIds.length === 0) return NextResponse.json({ pullId: null, attached: true })
+    if (fileIds.length === 0) return NextResponse.json({ pullId: pullId ?? null, attached: true })
 
-    const pull = await getActivePullForContact(contactId)
-    if (pull) {
-      await attachFilesToPull(pull.id, fileIds)
-      return NextResponse.json({ pullId: pull.id, attached: true })
+    if (pullId) {
+      await attachFilesToPull(pullId, fileIds)
+      return NextResponse.json({ pullId, attached: true })
     }
 
     await attachFilesToContact(contactId, fileIds)
     return NextResponse.json({ pullId: null, attached: true })
   } catch (err) {
     console.error('[api/attach-photos]', err)
-    return NextResponse.json({ error: 'Failed to attach photos' }, { status: 500 })
+    const message = err instanceof Error ? err.message : 'Failed to attach photos'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

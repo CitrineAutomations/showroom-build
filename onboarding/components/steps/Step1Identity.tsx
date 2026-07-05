@@ -58,8 +58,12 @@ export default function Step1Identity({ initialData, onComplete }: Props) {
         hasCardOnFile: data.hasCardOnFile,
         existingStripeCustomerId: data.existingStripeCustomerId,
       })
-    } catch {
-      setApiError('Unable to reach the CRM. Check your connection and try again.')
+    } catch (err) {
+      setApiError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Unable to reach the CRM. Check your connection and try again.'
+      )
     } finally {
       setLoading(false)
     }

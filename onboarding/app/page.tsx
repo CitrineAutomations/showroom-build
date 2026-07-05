@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'framer-motion'
 import StepIndicator from '@/components/StepIndicator'
 import ConflictModal from '@/components/ConflictModal'
+import Step0ClientRouter from '@/components/steps/Step0ClientRouter'
 import Step1Identity from '@/components/steps/Step1Identity'
 import Step2ClientType from '@/components/steps/Step2ClientType'
 import Step3DriversLicense from '@/components/steps/Step3DriversLicense'
@@ -27,10 +28,12 @@ export interface FormData {
   stripeCustomerId: string | null
   cardKept: boolean
   pullId: string | null
+  pullReturnDate: string | null
+  isResumedClient: boolean
   photoFileIds: string[]
 }
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 7
 
 const slideVariants = {
   enterForward:  { x: 24, opacity: 0 },
@@ -58,6 +61,8 @@ export default function OnboardingPage() {
     stripeCustomerId: null,
     cardKept: false,
     pullId: null,
+    pullReturnDate: null,
+    isResumedClient: false,
     photoFileIds: [],
   })
 
@@ -77,6 +82,26 @@ export default function OnboardingPage() {
 
   function handleStep1Complete(data: { firstName: string; lastName: string; email: string; phone: string; contactId: string; hasCardOnFile: boolean; existingStripeCustomerId: string | null }) {
     updateForm(data)
+    goNext()
+  }
+
+  function handleNewClient() {
+    goNext()
+  }
+
+  function handleExistingClientSelected(data: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    contactId: string
+    hasCardOnFile: boolean
+    existingStripeCustomerId: string | null
+    clientType: ClientType | null
+    pullId: string | null
+    pullReturnDate: string | null
+  }) {
+    updateForm({ ...data, isResumedClient: true })
     goNext()
   }
 
@@ -125,6 +150,8 @@ export default function OnboardingPage() {
       stripeCustomerId: null,
       cardKept: false,
       pullId: null,
+      pullReturnDate: null,
+      isResumedClient: false,
       photoFileIds: [],
     })
     setStep(1)
@@ -164,12 +191,18 @@ export default function OnboardingPage() {
           transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
         >
           {step === 1 && (
+            <Step0ClientRouter
+              onNewClient={handleNewClient}
+              onExistingClientSelected={handleExistingClientSelected}
+            />
+          )}
+          {step === 2 && (
             <Step1Identity
               initialData={{ firstName: formData.firstName, lastName: formData.lastName, email: formData.email, phone: formData.phone }}
               onComplete={handleStep1Complete}
             />
           )}
-          {step === 2 && (
+          {step === 3 && (
             <Step2ClientType
               selected={formData.clientType}
               onSelect={ct => updateForm({ clientType: ct })}
@@ -177,15 +210,16 @@ export default function OnboardingPage() {
               onBack={goBack}
             />
           )}
-          {step === 3 && (
+          {step === 4 && (
             <Step3DriversLicense
               fileIds={formData.dlFileIds}
+              isResumedClient={formData.isResumedClient}
               onFileIds={ids => updateForm({ dlFileIds: ids })}
               onNext={goNext}
               onBack={goBack}
             />
           )}
-          {step === 4 && (
+          {step === 5 && (
             <Step4Payment
               formData={formData}
               onEntry={handleStep4Entry}
@@ -194,17 +228,20 @@ export default function OnboardingPage() {
               onBack={goBack}
             />
           )}
-          {step === 5 && (
+          {step === 6 && (
             <Step4bPullDetails
               contactId={formData.contactId}
+              clientName={`${formData.firstName} ${formData.lastName}`.trim()}
+              initialReturnDate={formData.pullReturnDate}
               onComplete={handlePullDetailsComplete}
               onBack={goBack}
             />
           )}
-          {step === 6 && (
+          {step === 7 && (
             <Step5Photos
               contactId={formData.contactId}
               pullId={formData.pullId}
+              isResumedClient={formData.isResumedClient}
               onComplete={handleComplete}
               onBack={goBack}
             />

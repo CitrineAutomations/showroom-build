@@ -69,6 +69,11 @@ async function getAttachmentFileFieldMetadataId(): Promise<string> {
   return attachmentFileFieldIdPromise
 }
 
+function toPhonesInput(phone: string) {
+  const digits = phone.replace(/\D/g, '').slice(-10)
+  return { primaryPhoneNumber: digits, primaryPhoneCallingCode: '+1', primaryPhoneCountryCode: 'US' }
+}
+
 export interface TwentyContact {
   id: string
   name: { firstName: string; lastName: string }
@@ -89,6 +94,26 @@ export async function findContactByEmail(email: string): Promise<TwentyContact |
   return data.people.edges[0]?.node ?? null
 }
 
+export async function searchContacts(query: string): Promise<TwentyContact[]> {
+  const data = await gql<{ people: { edges: { node: TwentyContact }[] } }>(`
+    query SearchContacts($filter: PersonFilterInput!) {
+      people(filter: $filter, first: 10) {
+        edges { node { id name { firstName lastName } emails { primaryEmail } phones { primaryPhoneNumber } clientType stripeCustomerId } }
+      }
+    }
+  `, {
+    filter: {
+      or: [
+        { name: { firstName: { ilike: `%${query}%` } } },
+        { name: { lastName: { ilike: `%${query}%` } } },
+        { emails: { primaryEmail: { ilike: `%${query}%` } } },
+        { phones: { primaryPhoneNumber: { ilike: `%${query}%` } } },
+      ],
+    },
+  })
+  return data.people.edges.map(e => e.node)
+}
+
 export async function createContact(fullName: string, email: string, clientType: string, phone?: string): Promise<TwentyContact> {
   const [firstName, ...rest] = fullName.trim().split(' ')
   const lastName = rest.join(' ') || ''
@@ -100,7 +125,7 @@ export async function createContact(fullName: string, email: string, clientType:
     input: {
       name: { firstName, lastName },
       emails: { primaryEmail: email },
-      ...(phone ? { phones: { primaryPhoneNumber: phone } } : {}),
+      ...(phone ? { phones: toPhonesInput(phone) } : {}),
       clientType,
     },
   })
@@ -111,7 +136,7 @@ export async function updateContact(id: string, patch: { clientType?: string; st
   const { phone, ...rest } = patch
   const input: Record<string, unknown> = { ...rest }
   if (phone) {
-    input.phones = { primaryPhoneNumber: phone }
+    input.phones = toPhonesInput(phone)
   }
   if (patch.stripeCustomerId) {
     const stripeMode = patch.stripeCustomerId.startsWith('cus_') && process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_')
@@ -128,23 +153,25 @@ export async function updateContact(id: string, patch: { clientType?: string; st
   `, { id, input })
 }
 
-export async function getActivePullForContact(contactId: string): Promise<{ id: string } | null> {
-  const data = await gql<{ pulls: { edges: { node: { id: string } }[] } }>(`
+export async function getActivePullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string } | null> {
+  const data = await gql<{ pulls: { edges: { node: { id: string; returnDate: string; stage: string } }[] } }>(`
     query ActivePull($filter: PullFilterInput!) {
-      pulls(filter: $filter) { edges { node { id } } }
+      pulls(filter: $filter) { edges { node { id returnDate stage } } }
     }
-  `, { filter: { client: { id: { eq: contactId } }, stage: { in: ['OUT', 'DUE_SOON', 'OVERDUE'] } } })
+  `, { filter: { clientId: { id: { eq: contactId } }, stage: { in: ['VISITED', 'OUT'] } } })
   return data.pulls.edges[0]?.node ?? null
 }
 
 // repAssigned intentionally left unset — no rep auth in onboarding yet (Clerk login planned separately).
 // Reps must assign themselves on the Pull manually in Twenty until that ships.
-export async function createPull(contactId: string, returnDate: string): Promise<{ id: string }> {
+export async function createPull(contactId: string, returnDate: string, clientName: string): Promise<{ id: string }> {
+  const createdDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  const name = `${clientName} - ${createdDate}`
   const data = await gql<{ createPull: { id: string } }>(`
     mutation CreatePull($input: PullCreateInput!) {
       createPull(data: $input) { id }
     }
-  `, { input: { clientIdId: contactId, stage: 'VISITED', returnDate } })
+  `, { input: { name, clientIdId: contactId, stage: 'VISITED', returnDate } })
   return data.createPull
 }
 

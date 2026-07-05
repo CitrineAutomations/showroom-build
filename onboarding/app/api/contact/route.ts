@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('[api/contact]', err)
-    return NextResponse.json({ error: 'CRM unavailable' }, { status: 500 })
+    const message = err instanceof Error ? err.message : 'CRM unavailable'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
