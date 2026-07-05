@@ -10,8 +10,17 @@ interface PhotoItem {
   state: 'uploading' | 'done' | 'error'
 }
 
+interface ExistingPhoto {
+  id: string
+  name: string
+  url: string
+}
+
 interface Props {
   contactId: string | null
+  pullId: string | null
+  isResumedClient?: boolean
+  existingPhotos?: ExistingPhoto[]
   onComplete: (photoFileIds: string[]) => void
   onBack: () => void
 }
@@ -19,7 +28,7 @@ interface Props {
 let localIdCounter = 0
 function nextId() { return String(++localIdCounter) }
 
-export default function Step5Photos({ contactId, onComplete, onBack }: Props) {
+export default function Step5Photos({ contactId, pullId, isResumedClient, existingPhotos, onComplete, onBack }: Props) {
   const mainInputId = useId()
   const addMoreInputId = useId()
   const photosRef = useRef<PhotoItem[]>([])
@@ -43,29 +52,25 @@ export default function Step5Photos({ contactId, onComplete, onBack }: Props) {
   async function handleFiles(files: FileList) {
     setUploadError(null)
 
-    const batch: { item: PhotoItem; file: File }[] = []
-    setPhotos(prev => {
-      const slice = Array.from(files).slice(0, MAX - prev.length)
-      for (const file of slice) {
-        batch.push({
-          file,
-          item: {
-            localId: nextId(),
-            preview: URL.createObjectURL(file),
-            fileId: null,
-            state: 'uploading',
-          },
-        })
-      }
-      const next = [...prev, ...batch.map(entry => entry.item)]
-      photosRef.current = next
-      if (batch.length > 0) {
-        setLiveMsg(`Uploading ${batch.length} photo${batch.length > 1 ? 's' : ''}…`)
-      }
-      return next
-    })
+    const slice = Array.from(files).slice(0, MAX - photosRef.current.length)
+    const batch: { item: PhotoItem; file: File }[] = slice.map(file => ({
+      file,
+      item: {
+        localId: nextId(),
+        preview: URL.createObjectURL(file),
+        fileId: null,
+        state: 'uploading' as const,
+      },
+    }))
 
     if (batch.length === 0) return
+
+    setPhotos(prev => {
+      const next = [...prev, ...batch.map(entry => entry.item)]
+      photosRef.current = next
+      return next
+    })
+    setLiveMsg(`Uploading ${batch.length} photo${batch.length > 1 ? 's' : ''}…`)
 
     await Promise.all(batch.map(async ({ item, file }) => {
       const fileId = await uploadFile(file)
@@ -97,7 +102,7 @@ export default function Step5Photos({ contactId, onComplete, onBack }: Props) {
       await fetch('/api/attach-photos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contactId, fileIds }),
+        body: JSON.stringify({ contactId, pullId, fileIds }),
       })
     } catch {
       setApiError('Onboarding saved, but photos could not be attached. Check the CRM record manually.')
@@ -118,6 +123,27 @@ export default function Step5Photos({ contactId, onComplete, onBack }: Props) {
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-5)', lineHeight: 1.6 }}>
           Photograph items before they leave the showroom.
         </p>
+
+        {isResumedClient && existingPhotos && existingPhotos.length > 0 && (
+          <>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-3)', lineHeight: 1.6 }}>
+              Condition photos already on file — skip or add more if items have changed.
+            </p>
+            <div className="photo-grid" style={{ marginBottom: 'var(--space-4)' }}>
+              {existingPhotos.map(photo => (
+                <div key={photo.id} className="photo-thumb-wrap">
+                  <img src={photo.url} alt={photo.name} />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {isResumedClient && (!existingPhotos || existingPhotos.length === 0) && (
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)', lineHeight: 1.6 }}>
+            No condition photos on file yet.
+          </p>
+        )}
 
         <span aria-live="polite" className="sr-only">{liveMsg}</span>
 

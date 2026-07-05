@@ -24,6 +24,7 @@ interface ExistingClientData {
   clientType: ClientType | null
   pullId: string | null
   pullReturnDate: string | null
+  pullPhotos: { id: string; name: string; url: string }[]
 }
 
 interface Props {
@@ -89,6 +90,7 @@ export default function Step0ClientRouter({ onNewClient, onExistingClientSelecte
         clientType: (result.clientType as ClientType | null) ?? null,
         pullId: pullData.pull?.id ?? null,
         pullReturnDate: pullData.pull?.returnDate ?? null,
+        pullPhotos: pullData.pull?.photos ?? [],
       })
     } catch (err) {
       setApiError(

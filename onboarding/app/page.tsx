@@ -29,6 +29,7 @@ export interface FormData {
   cardKept: boolean
   pullId: string | null
   pullReturnDate: string | null
+  pullPhotos: { id: string; name: string; url: string }[]
   isResumedClient: boolean
   photoFileIds: string[]
 }
@@ -62,6 +63,7 @@ export default function OnboardingPage() {
     cardKept: false,
     pullId: null,
     pullReturnDate: null,
+    pullPhotos: [],
     isResumedClient: false,
     photoFileIds: [],
   })
@@ -100,6 +102,7 @@ export default function OnboardingPage() {
     clientType: ClientType | null
     pullId: string | null
     pullReturnDate: string | null
+    pullPhotos: { id: string; name: string; url: string }[]
   }) {
     updateForm({ ...data, isResumedClient: true })
     goNext()
@@ -151,6 +154,7 @@ export default function OnboardingPage() {
       cardKept: false,
       pullId: null,
       pullReturnDate: null,
+      pullPhotos: [],
       isResumedClient: false,
       photoFileIds: [],
     })
@@ -242,6 +246,7 @@ export default function OnboardingPage() {
               contactId={formData.contactId}
               pullId={formData.pullId}
               isResumedClient={formData.isResumedClient}
+              existingPhotos={formData.pullPhotos}
               onComplete={handleComplete}
               onBack={goBack}
             />

@@ -153,13 +153,46 @@ export async function updateContact(id: string, patch: { clientType?: string; st
   `, { id, input })
 }
 
-export async function getActivePullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string } | null> {
-  const data = await gql<{ pulls: { edges: { node: { id: string; returnDate: string; stage: string } }[] } }>(`
+export interface PullPhoto {
+  id: string
+  name: string
+  url: string
+}
+
+export async function getActivePullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string; photos: PullPhoto[] } | null> {
+  const data = await gql<{ pulls: { edges: { node: {
+    id: string
+    returnDate: string
+    stage: string
+    attachments: { edges: { node: { id: string; name: string; fullPath: string } }[] }
+  } }[] } }>(`
     query ActivePull($filter: PullFilterInput!) {
-      pulls(filter: $filter) { edges { node { id returnDate stage } } }
+      pulls(filter: $filter) {
+        edges {
+          node {
+            id
+            returnDate
+            stage
+            attachments {
+              edges { node { id name fullPath } }
+            }
+          }
+        }
+      }
     }
   `, { filter: { clientId: { id: { eq: contactId } }, stage: { in: ['VISITED', 'OUT'] } } })
-  return data.pulls.edges[0]?.node ?? null
+  const node = data.pulls.edges[0]?.node
+  if (!node) return null
+  return {
+    id: node.id,
+    returnDate: node.returnDate,
+    stage: node.stage,
+    photos: node.attachments.edges.map(e => ({
+      id: e.node.id,
+      name: e.node.name,
+      url: `${TWENTY_BASE_URL}/files/${e.node.fullPath}`,
+    })),
+  }
 }
 
 // repAssigned intentionally left unset — no rep auth in onboarding yet (Clerk login planned separately).
