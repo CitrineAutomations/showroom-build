@@ -10,6 +10,7 @@ import Step2ClientType from '@/components/steps/Step2ClientType'
 import Step3DriversLicense from '@/components/steps/Step3DriversLicense'
 import Step4Payment from '@/components/steps/Step4Payment'
 import Step4bPullDetails from '@/components/steps/Step4bPullDetails'
+import Step4cItemEntry from '@/components/steps/Step4cItemEntry'
 import Step5Photos from '@/components/steps/Step5Photos'
 import SuccessScreen from '@/components/SuccessScreen'
 import ReturnFlow from '@/components/ReturnFlow'
@@ -35,7 +36,7 @@ export interface FormData {
   photoFileIds: string[]
 }
 
-const TOTAL_STEPS = 7
+const TOTAL_STEPS = 8
 
 const slideVariants = {
   enterForward:  { x: 24, opacity: 0 },
@@ -256,6 +257,13 @@ export default function OnboardingPage() {
             />
           )}
           {step === 7 && (
+            <Step4cItemEntry
+              pullId={formData.pullId}
+              onComplete={goNext}
+              onBack={goBack}
+            />
+          )}
+          {step === 8 && (
             <Step5Photos
               contactId={formData.contactId}
               pullId={formData.pullId}

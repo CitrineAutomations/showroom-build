@@ -11,7 +11,7 @@ query GetPull($id: ID!) {
     stage
     returnDate
     calendarEventId
-    client {
+    clientId {
       id
       name { firstName lastName }
       emails { primaryEmail }
@@ -22,7 +22,7 @@ query GetPull($id: ID!) {
       name { firstName lastName }
       emails { primaryEmail }
     }
-    items {
+    pull {
       edges {
         node {
           id
@@ -49,7 +49,7 @@ query PullsDueSoon($today: DateTime!, $threshold: DateTime!) {
         id
         name
         returnDate
-        client {
+        clientId {
           id
           name { firstName lastName }
           emails { primaryEmail }
@@ -74,7 +74,7 @@ query PullsOverdue($today: DateTime!) {
         id
         name
         returnDate
-        client {
+        clientId {
           id
           name { firstName lastName }
           emails { primaryEmail }

@@ -72,7 +72,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"query\": \"query GetPull($id: ID!) { pull(filter: { id: { eq: $id } }) { id name stage returnDate calendarEventId client { id name { firstName lastName } emails { primaryEmail } } items { edges { node { id itemId designer itemType status } } } } }\",\n  \"variables\": { \"id\": \"{{ $('Twenty Pull Webhook').item.json.body.record.id }}\" }\n}",
+        "jsonBody": "={\n  \"query\": \"query GetPull($id: ID!) { pull(filter: { id: { eq: $id } }) { id name stage returnDate calendarEventId clientId { id name { firstName lastName } emails { primaryEmail } } pull { edges { node { id itemId designer itemType status } } } } }\",\n  \"variables\": { \"id\": \"{{ $('Twenty Pull Webhook').item.json.body.record.id }}\" }\n}",
         "options": {}
       },
       "id": "a942048d-7c80-4e9f-b3eb-df94237e7438",
@@ -93,8 +93,8 @@
         "start": "={{ $json.data.pull.returnDate }}",
         "end": "={{ $json.data.pull.returnDate }}",
         "additionalFields": {
-          "summary": "=Return: {{ $json.data.pull.client.name.firstName }} {{ $json.data.pull.client.name.lastName }}",
-          "description": "=Pull ID: {{ $json.data.pull.id }}\\nItems: {{ $json.data.pull.items.edges.map(e => e.node.designer + ' ' + e.node.itemType).join(', ') }}"
+          "summary": "=Return: {{ $json.data.pull.clientId.name.firstName }} {{ $json.data.pull.clientId.name.lastName }}",
+          "description": "=Pull ID: {{ $json.data.pull.id }}\\nItems: {{ $json.data.pull.pull.edges.map(e => e.node.designer + ' ' + e.node.itemType).join(', ') }}"
         }
       },
       "id": "331a4b4e-ff14-41e3-8bf5-3e65e072cf1a",
@@ -139,7 +139,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const pull = $('Fetch Pull Details').first().json.data.pull;\nconst items = pull.items?.edges?.map(e => e.node) ?? [];\nreturn items.map(item => ({ json: { pullId: pull.id, itemId: item.id, itemLabel: `${item.designer} ${item.itemType}` } }));"
+        "jsCode": "const pull = $('Fetch Pull Details').first().json.data.pull;\nconst items = pull.pull?.edges?.map(e => e.node) ?? [];\nreturn items.map(item => ({ json: { pullId: pull.id, itemId: item.id, itemLabel: `${item.designer} ${item.itemType}` } }));"
       },
       "id": "7a7159e0-74a3-4f79-921d-15c100e932f1",
       "name": "Split Inventory Items",

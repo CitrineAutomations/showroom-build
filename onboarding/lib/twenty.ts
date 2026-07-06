@@ -253,7 +253,7 @@ export async function getOpenPullForContact(contactId: string): Promise<{ id: st
     id: string
     returnDate: string
     stage: string
-    items: { edges: { node: PullItem }[] }
+    pull: { edges: { node: PullItem }[] }
   } }[] } }>(`
     query OpenPull($filter: PullFilterInput!) {
       pulls(filter: $filter) {
@@ -262,7 +262,7 @@ export async function getOpenPullForContact(contactId: string): Promise<{ id: st
             id
             returnDate
             stage
-            items {
+            pull {
               edges { node { id itemId designer itemType color status } }
             }
           }
@@ -276,7 +276,7 @@ export async function getOpenPullForContact(contactId: string): Promise<{ id: st
     id: node.id,
     returnDate: node.returnDate,
     stage: node.stage,
-    items: node.items.edges.map(e => e.node),
+    items: node.pull.edges.map(e => e.node),
   }
 }
 
@@ -307,17 +307,17 @@ export async function returnPullItems(pullId: string, items: { id: string; condi
 }
 
 async function getPullItemsById(pullId: string): Promise<{ stage: string; items: PullItem[] }> {
-  const data = await gql<{ pull: { stage: string; items: { edges: { node: PullItem }[] } } }>(`
+  const data = await gql<{ pull: { stage: string; pull: { edges: { node: PullItem }[] } } }>(`
     query PullItemsById($id: ID!) {
       pull(filter: { id: { eq: $id } }) {
         stage
-        items {
+        pull {
           edges { node { id itemId designer itemType color status } }
         }
       }
     }
   `, { id: pullId })
-  return { stage: data.pull.stage, items: data.pull.items.edges.map(e => e.node) }
+  return { stage: data.pull.stage, items: data.pull.pull.edges.map(e => e.node) }
 }
 
 // repAssigned intentionally left unset — no rep auth in onboarding yet (Clerk login planned separately).
@@ -379,6 +379,82 @@ async function uploadFileToTwentyOnce(arrayBuffer: ArrayBuffer, filename: string
   const fileId = json.data?.uploadFilesFieldFile?.id as string | undefined
   if (!fileId) throw new Error('Twenty file upload returned no file id')
   return fileId
+}
+
+// Twenty's InventoryItem.season enum is a fixed, manually-curated list that may lag behind
+// the calendar (e.g. it may not yet define a season for the current half-year). Ordered
+// oldest-to-newest so a computed season with no exact match falls back to the closest earlier one.
+const KNOWN_SEASONS = [
+  'SS_2023', 'FW_2023', 'SS_2024', 'FW_2024',
+  'RESORT_2025', 'SS_2025', 'FW_2025', 'RESORT_2026', 'SS_2026',
+]
+
+function currentSeasonCode(): { seasonEnum: string; seasonCode: string } {
+  const now = new Date()
+  const year = now.getFullYear()
+  const isSpringSummer = now.getMonth() < 6 // Jan-Jun -> SS, Jul-Dec -> FW
+  const computed = isSpringSummer ? `SS_${year}` : `FW_${year}`
+  const seasonEnum = KNOWN_SEASONS.includes(computed)
+    ? computed
+    : KNOWN_SEASONS[KNOWN_SEASONS.length - 1]
+  const [prefix, seasonYear] = seasonEnum.split('_')
+  const seasonCode = `${prefix.slice(0, 2)}${seasonYear.slice(-2)}`
+  return { seasonEnum, seasonCode }
+}
+
+function designerInitials(designer: string): string {
+  return designer
+    .split(/\s+/)
+    .map(word => word.replace(/[^a-zA-Z]/g, '').charAt(0))
+    .filter(Boolean)
+    .join('')
+    .toUpperCase()
+}
+
+export async function createInventoryItem(
+  pullId: string,
+  designer: string,
+  color: string,
+  itemType: string,
+  sequence: number,
+): Promise<{ id: string }> {
+  const { seasonEnum, seasonCode } = currentSeasonCode()
+  const random = Math.floor(100 + Math.random() * 900)
+  const sequenceCode = String(sequence).padStart(3, '0')
+  const itemId = `${designerInitials(designer)}-${random}-${seasonCode}-${sequenceCode}`
+
+  const data = await gql<{ createInventoryItem: { id: string } }>(`
+    mutation CreateInventoryItem($input: InventoryItemCreateInput!) {
+      createInventoryItem(data: $input) { id }
+    }
+  `, {
+    input: {
+      itemId,
+      designer,
+      color,
+      itemType,
+      season: seasonEnum,
+      status: 'OUT',
+      pullIdId: pullId,
+    },
+  })
+  return data.createInventoryItem
+}
+
+export async function attachFilesToItem(itemId: string, fileIds: string[]): Promise<void> {
+  for (const fileId of fileIds) {
+    await gql(`
+      mutation AttachFile($input: AttachmentCreateInput!) {
+        createAttachment(data: $input) { id }
+      }
+    `, {
+      input: {
+        targetInventoryItemId: itemId,
+        name: `photo-${fileId.slice(0, 8)}`,
+        file: [{ fileId, label: 'Photo' }],
+      },
+    })
+  }
 }
 
 export async function attachFilesToPull(pullId: string, fileIds: string[]): Promise<void> {

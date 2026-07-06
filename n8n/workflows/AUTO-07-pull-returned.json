@@ -50,7 +50,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"query\": \"query GetPull($id: ID!) { pull(filter: { id: { eq: $id } }) { id calendarEventId items { edges { node { id designer itemType } } } } } }\",\n  \"variables\": { \"id\": \"{{ $('Twenty Pull Webhook').item.json.body.record.id }}\" }\n}",
+        "jsonBody": "={\n  \"query\": \"query GetPull($id: ID!) { pull(filter: { id: { eq: $id } }) { id calendarEventId pull { edges { node { id designer itemType } } } } } }\",\n  \"variables\": { \"id\": \"{{ $('Twenty Pull Webhook').item.json.body.record.id }}\" }\n}",
         "options": {}
       },
       "id": "33333333-3333-4333-8333-333333333303",
@@ -77,7 +77,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const pull = $input.first().json.data.pull;\nconst items = pull.items?.edges?.map(e => e.node) ?? [];\nreturn items.map(item => ({ json: { itemId: item.id } }));"
+        "jsCode": "const pull = $input.first().json.data.pull;\nconst items = pull.pull?.edges?.map(e => e.node) ?? [];\nreturn items.map(item => ({ json: { itemId: item.id } }));"
       },
       "id": "33333333-3333-4333-8333-333333333305",
       "name": "Split Items",
