@@ -30,7 +30,7 @@ interface OpenPull {
 const CONDITION_LABELS: Record<ItemCondition, string> = {
   AVAILABLE: 'Good',
   DAMAGED: 'Damaged',
-  MISSING: 'Missing',
+  LOST: 'Missing',
 }
 
 interface Props {
@@ -222,7 +222,7 @@ export default function ReturnFlow({ onDone }: Props) {
 
                   {checked && !alreadyBack && (
                     <div role="radiogroup" aria-label={`Condition for ${item.designer} ${item.itemType}`} style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                      {(['AVAILABLE', 'DAMAGED', 'MISSING'] as ItemCondition[]).map(c => (
+                      {(['AVAILABLE', 'DAMAGED', 'LOST'] as ItemCondition[]).map(c => (
                         <button
                           key={c}
                           role="radio"

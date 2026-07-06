@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOpenPullForContact, returnPullItems, type ItemCondition } from '@/lib/twenty'
 
-const VALID_CONDITIONS: ItemCondition[] = ['AVAILABLE', 'DAMAGED', 'MISSING']
+const VALID_CONDITIONS: ItemCondition[] = ['AVAILABLE', 'DAMAGED', 'LOST']
 
 export async function GET(req: NextRequest) {
   try {

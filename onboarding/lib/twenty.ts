@@ -236,7 +236,7 @@ export async function getOpenPullForContact(contactId: string): Promise<{ id: st
   }
 }
 
-export type ItemCondition = 'AVAILABLE' | 'DAMAGED' | 'MISSING'
+export type ItemCondition = 'AVAILABLE' | 'DAMAGED' | 'LOST'
 
 export async function returnPullItems(pullId: string, items: { id: string; condition: ItemCondition }[]): Promise<{ stage: string }> {
   for (const { id, condition } of items) {
