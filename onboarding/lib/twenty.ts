@@ -221,7 +221,7 @@ export async function listOpenPulls(): Promise<OpenPullSummary[]> {
     id: string
     returnDate: string
     stage: string
-    client: OpenPullSummary['client'] | null
+    clientId: OpenPullSummary['client'] | null
   } }[] } }>(`
     query OpenPulls($filter: PullFilterInput!) {
       pulls(filter: $filter, first: 200) {
@@ -230,7 +230,7 @@ export async function listOpenPulls(): Promise<OpenPullSummary[]> {
             id
             returnDate
             stage
-            client {
+            clientId {
               id
               name { firstName lastName }
               emails { primaryEmail }
@@ -241,9 +241,11 @@ export async function listOpenPulls(): Promise<OpenPullSummary[]> {
       }
     }
   `, { filter: { stage: { in: ['VISITED', 'OUT', 'DUE_SOON', 'OVERDUE'] } } })
-  return data.pulls.edges
-    .map(e => e.node)
-    .filter((node): node is OpenPullSummary => node.client !== null)
+  const summaries: (OpenPullSummary | null)[] = data.pulls.edges.map(e => {
+    if (!e.node.clientId) return null
+    return { id: e.node.id, returnDate: e.node.returnDate, stage: e.node.stage, client: e.node.clientId }
+  })
+  return summaries.filter((s): s is OpenPullSummary => s !== null)
 }
 
 export async function getOpenPullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string; items: PullItem[] } | null> {
