@@ -1,14 +1,19 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Search, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
 import type { ItemCondition } from '@/lib/twenty'
 
-interface SearchResult {
+interface OpenPullListEntry {
   id: string
-  name: { firstName: string; lastName: string }
-  emails: { primaryEmail: string }
-  phones: { primaryPhoneNumber: string } | null
+  returnDate: string
+  stage: string
+  client: {
+    id: string
+    name: { firstName: string; lastName: string }
+    emails: { primaryEmail: string }
+    phones: { primaryPhoneNumber: string } | null
+  }
 }
 
 interface PullItem {
@@ -42,8 +47,8 @@ type Mode = 'search' | 'items' | 'done'
 export default function ReturnFlow({ onDone }: Props) {
   const [mode, setMode] = useState<Mode>('search')
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResult[]>([])
-  const [searching, setSearching] = useState(false)
+  const [openPulls, setOpenPulls] = useState<OpenPullListEntry[]>([])
+  const [loadingList, setLoadingList] = useState(true)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [loadingPull, setLoadingPull] = useState(false)
   const [pull, setPull] = useState<OpenPull | null>(null)
@@ -52,43 +57,47 @@ export default function ReturnFlow({ onDone }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [finalStage, setFinalStage] = useState<string | null>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  async function loadOpenPulls() {
+    setLoadingList(true)
+    setSearchError(null)
+    try {
+      const res = await fetch('/api/return/open-pulls')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to load open pulls')
+      setOpenPulls(data.pulls)
+    } catch (err) {
+      setSearchError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Unable to reach the CRM. Check your connection and try again.'
+      )
+    } finally {
+      setLoadingList(false)
+    }
+  }
 
   useEffect(() => {
-    if (mode !== 'search') return
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    const q = query.trim()
-    if (!q) {
-      setResults([])
-      setSearchError(null)
-      return
-    }
-    debounceRef.current = setTimeout(async () => {
-      setSearching(true)
-      setSearchError(null)
-      try {
-        const res = await fetch(`/api/contact-search?q=${encodeURIComponent(q)}`)
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Search failed')
-        setResults(data.results)
-      } catch (err) {
-        setSearchError(
-          err instanceof Error && err.message
-            ? err.message
-            : 'Unable to reach the CRM. Check your connection and try again.'
-        )
-      } finally {
-        setSearching(false)
-      }
-    }, 300)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [query, mode])
+    loadOpenPulls()
+  }, [])
 
-  async function selectClient(result: SearchResult) {
+  const q = query.trim().toLowerCase()
+  const filteredPulls = q
+    ? openPulls.filter(p => {
+        const { firstName, lastName } = p.client.name
+        return (
+          `${firstName} ${lastName}`.toLowerCase().includes(q) ||
+          p.client.emails.primaryEmail.toLowerCase().includes(q) ||
+          (p.client.phones?.primaryPhoneNumber ?? '').toLowerCase().includes(q)
+        )
+      })
+    : openPulls
+
+  async function selectClient(entry: OpenPullListEntry) {
     setLoadingPull(true)
     setSearchError(null)
     try {
-      const res = await fetch(`/api/return?contactId=${encodeURIComponent(result.id)}`)
+      const res = await fetch(`/api/return?contactId=${encodeURIComponent(entry.client.id)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Pull lookup failed')
       if (!data.pull) {
@@ -100,7 +109,7 @@ export default function ReturnFlow({ onDone }: Props) {
         return
       }
       setPull(data.pull)
-      setClientName(`${result.name.firstName} ${result.name.lastName}`.trim())
+      setClientName(`${entry.client.name.firstName} ${entry.client.name.lastName}`.trim())
       const initial: Record<string, ItemCondition | null> = {}
       for (const item of data.pull.items as PullItem[]) {
         initial[item.id] = item.status === 'OUT' ? 'AVAILABLE' : null
@@ -159,13 +168,13 @@ export default function ReturnFlow({ onDone }: Props) {
   function reset() {
     setMode('search')
     setQuery('')
-    setResults([])
     setSearchError(null)
     setPull(null)
     setClientName('')
     setItemConditions({})
     setSubmitError(null)
     setFinalStage(null)
+    loadOpenPulls()
   }
 
   if (mode === 'done') {
@@ -281,39 +290,48 @@ export default function ReturnFlow({ onDone }: Props) {
           <input
             type="text"
             autoFocus
-            placeholder="Search name, email, or phone"
+            placeholder="Search open pulls by name, email, or phone"
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="field-input"
             style={{ paddingLeft: 36 }}
-            aria-label="Search for client"
+            aria-label="Search open pulls"
           />
         </div>
 
-        {(searching || loadingPull) && (
+        {(loadingList || loadingPull) && (
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-3)' }}>
             <Loader2 size={14} className="spin" aria-hidden="true" style={{ marginRight: 6, verticalAlign: 'middle' }} />
-            {loadingPull ? 'Loading pull…' : 'Searching…'}
+            {loadingPull ? 'Loading pull…' : 'Loading open pulls…'}
           </p>
         )}
 
-        {!searching && query.trim() && results.length === 0 && !searchError && (
+        {!loadingList && openPulls.length === 0 && !searchError && (
           <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-4)', textAlign: 'center' }}>
-            No matches.
+            No open pulls right now.
           </p>
         )}
 
-        {results.length > 0 && (
+        {!loadingList && openPulls.length > 0 && filteredPulls.length === 0 && (
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-4)', textAlign: 'center' }}>
+            No open pulls match “{query.trim()}”.
+          </p>
+        )}
+
+        {filteredPulls.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-4)' }}>
-            {results.map(r => (
+            {filteredPulls.map(p => (
               <button
-                key={r.id}
+                key={p.id}
                 className="option-card"
-                onClick={() => selectClient(r)}
+                onClick={() => selectClient(p)}
                 disabled={loadingPull}
               >
-                <span className="option-card-label">{r.name.firstName} {r.name.lastName}</span>
-                <span className="option-card-sublabel">{r.emails.primaryEmail}{r.phones?.primaryPhoneNumber ? ` · ${r.phones.primaryPhoneNumber}` : ''}</span>
+                <span className="option-card-label">{p.client.name.firstName} {p.client.name.lastName}</span>
+                <span className="option-card-sublabel">
+                  {p.stage} · returns {new Date(p.returnDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {p.client.phones?.primaryPhoneNumber ? ` · ${p.client.phones.primaryPhoneNumber}` : ''}
+                </span>
               </button>
             ))}
           </div>

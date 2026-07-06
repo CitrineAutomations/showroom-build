@@ -204,6 +204,41 @@ export interface PullItem {
   status: string
 }
 
+export interface OpenPullSummary {
+  id: string
+  returnDate: string
+  stage: string
+  client: {
+    id: string
+    name: { firstName: string; lastName: string }
+    emails: { primaryEmail: string }
+    phones: { primaryPhoneNumber: string } | null
+  }
+}
+
+export async function listOpenPulls(): Promise<OpenPullSummary[]> {
+  const data = await gql<{ pulls: { edges: { node: OpenPullSummary }[] } }>(`
+    query OpenPulls($filter: PullFilterInput!) {
+      pulls(filter: $filter, first: 200) {
+        edges {
+          node {
+            id
+            returnDate
+            stage
+            client {
+              id
+              name { firstName lastName }
+              emails { primaryEmail }
+              phones { primaryPhoneNumber }
+            }
+          }
+        }
+      }
+    }
+  `, { filter: { stage: { in: ['VISITED', 'OUT', 'DUE_SOON', 'OVERDUE'] } } })
+  return data.pulls.edges.map(e => e.node)
+}
+
 export async function getOpenPullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string; items: PullItem[] } | null> {
   const data = await gql<{ pulls: { edges: { node: {
     id: string
