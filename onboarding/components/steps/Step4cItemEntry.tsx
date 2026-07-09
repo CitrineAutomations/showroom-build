@@ -36,6 +36,7 @@ interface ItemCard {
   designer: string
   color: string
   itemType: string
+  itemTypeOther: boolean
   conditionNotes: string
   photos: PhotoItem[]
   errors: { designer?: string; color?: string; itemType?: string }
@@ -53,6 +54,7 @@ const ITEM_TYPES = [
   { label: 'Bag', value: 'BAG' },
   { label: 'Shoes', value: 'SHOES' },
   { label: 'Accessory', value: 'ACCESSORY' },
+  { label: 'Other…', value: 'OTHER' },
 ]
 
 const MAX_ITEMS = 20
@@ -71,6 +73,7 @@ function emptyCard(): ItemCard {
     designer: '',
     color: '',
     itemType: '',
+    itemTypeOther: false,
     conditionNotes: '',
     photos: [],
     errors: {},
@@ -145,7 +148,7 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
   }
 
   function switchToSearch(localId: string) {
-    patchCard(localId, { mode: 'existing', selectedItem: null, designer: '', color: '', itemType: '', errors: {} })
+    patchCard(localId, { mode: 'existing', selectedItem: null, designer: '', color: '', itemType: '', itemTypeOther: false, errors: {} })
   }
 
   async function uploadFile(file: File): Promise<string | null> {
@@ -195,7 +198,7 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
 
   function isCardFilled(card: ItemCard): boolean {
     if (card.mode === 'existing') return !!card.selectedItem
-    return !!card.designer.trim() && !!card.color.trim() && !!card.itemType
+    return !!card.designer.trim() && !!card.color.trim() && !!card.itemType.trim()
   }
 
   const hasAtLeastOneItem = cards.some(isCardFilled)
@@ -211,7 +214,7 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
       const errors: ItemCard['errors'] = {}
       if (!card.designer.trim()) errors.designer = 'Designer is required.'
       if (!card.color.trim()) errors.color = 'Color is required.'
-      if (!card.itemType) errors.itemType = 'Item type is required.'
+      if (!card.itemType.trim()) errors.itemType = 'Item type is required.'
       if (Object.keys(errors).length > 0) valid = false
       return { ...card, errors }
     })
@@ -243,7 +246,7 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
           mode: 'new' as const,
           designer: card.designer.trim(),
           color: card.color.trim(),
-          itemType: card.itemType,
+          itemType: card.itemType.trim(),
           conditionNotes: card.conditionNotes.trim() || undefined,
           fileIds,
         }
@@ -476,8 +479,14 @@ function ItemCardEditor({
           <div>
             <label className="field-label">Item Type</label>
             <select
-              value={card.itemType}
-              onChange={e => onChange({ itemType: e.target.value, errors: { ...card.errors, itemType: undefined } })}
+              value={card.itemTypeOther ? 'OTHER' : card.itemType}
+              onChange={e => {
+                if (e.target.value === 'OTHER') {
+                  onChange({ itemTypeOther: true, itemType: '', errors: { ...card.errors, itemType: undefined } })
+                } else {
+                  onChange({ itemTypeOther: false, itemType: e.target.value, errors: { ...card.errors, itemType: undefined } })
+                }
+              }}
               className={`field-input${card.errors.itemType ? ' error' : ''}`}
               aria-invalid={!!card.errors.itemType}
             >
@@ -486,6 +495,17 @@ function ItemCardEditor({
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
+            {card.itemTypeOther && (
+              <input
+                type="text"
+                value={card.itemType}
+                onChange={e => onChange({ itemType: e.target.value, errors: { ...card.errors, itemType: undefined } })}
+                placeholder="Describe the item type"
+                className={`field-input${card.errors.itemType ? ' error' : ''}`}
+                aria-invalid={!!card.errors.itemType}
+                style={{ marginTop: 'var(--space-2)' }}
+              />
+            )}
             {card.errors.itemType && <p className="field-error" role="alert">{card.errors.itemType}</p>}
           </div>
         </div>
