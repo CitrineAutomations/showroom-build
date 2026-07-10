@@ -24,7 +24,7 @@ interface ExistingClientData {
   clientType: ClientType | null
   pullId: string | null
   pullReturnDate: string | null
-  pullPhotos: { id: string; name: string; url: string }[]
+  licensePhotoUrls: string[]
 }
 
 interface Props {
@@ -76,9 +76,14 @@ export default function Step0ClientRouter({ onNewClient, onExistingClientSelecte
     setSelecting(true)
     setApiError(null)
     try {
-      const pullRes = await fetch(`/api/pull?contactId=${encodeURIComponent(result.id)}`)
+      const [pullRes, licenseRes] = await Promise.all([
+        fetch(`/api/pull?contactId=${encodeURIComponent(result.id)}`),
+        fetch(`/api/contact/license?contactId=${encodeURIComponent(result.id)}`),
+      ])
       const pullData = await pullRes.json()
       if (!pullRes.ok) throw new Error(pullData.error || 'Pull lookup failed')
+      const licenseData = await licenseRes.json()
+      if (!licenseRes.ok) throw new Error(licenseData.error || 'License photo lookup failed')
 
       onExistingClientSelected({
         firstName: result.name.firstName,
@@ -91,7 +96,7 @@ export default function Step0ClientRouter({ onNewClient, onExistingClientSelecte
         clientType: (result.clientType as ClientType | null) ?? null,
         pullId: pullData.pull?.id ?? null,
         pullReturnDate: pullData.pull?.returnDate ?? null,
-        pullPhotos: pullData.pull?.photos ?? [],
+        licensePhotoUrls: (licenseData.photos ?? []).map((p: { url: string }) => p.url),
       })
     } catch (err) {
       setApiError(

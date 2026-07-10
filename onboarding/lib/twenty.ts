@@ -41,32 +41,35 @@ async function metadataGql<T>(query: string, variables?: Record<string, unknown>
   return json.data as T
 }
 
-let attachmentFileFieldIdPromise: Promise<string> | null = null
+const fileFieldIdPromises = new Map<string, Promise<string>>()
 
-async function loadAttachmentFileFieldMetadataId(): Promise<string> {
+async function loadFileFieldMetadataId(objectName: string, fieldName: string): Promise<string> {
   const data = await metadataGql<{
     objects: { edges: { node: { nameSingular: string; fieldsList: { id: string; name: string }[] } }[] }
   }>(`
-    query AttachmentFileField {
+    query FileField {
       objects(paging: { first: 200 }) {
         edges { node { nameSingular fieldsList { id name } } }
       }
     }
   `)
-  const attachment = data.objects.edges.find(e => e.node.nameSingular === 'attachment')
-  const field = attachment?.node.fieldsList.find(f => f.name === 'file')
-  if (!field) throw new Error('Attachment file field metadata not found')
+  const object = data.objects.edges.find(e => e.node.nameSingular === objectName)
+  const field = object?.node.fieldsList.find(f => f.name === fieldName)
+  if (!field) throw new Error(`${objectName}.${fieldName} field metadata not found`)
   return field.id
 }
 
-async function getAttachmentFileFieldMetadataId(): Promise<string> {
-  if (!attachmentFileFieldIdPromise) {
-    attachmentFileFieldIdPromise = loadAttachmentFileFieldMetadataId().catch(err => {
-      attachmentFileFieldIdPromise = null
+async function getFileFieldMetadataId(objectName: string, fieldName: string): Promise<string> {
+  const key = `${objectName}.${fieldName}`
+  let promise = fileFieldIdPromises.get(key)
+  if (!promise) {
+    promise = loadFileFieldMetadataId(objectName, fieldName).catch(err => {
+      fileFieldIdPromises.delete(key)
       throw err
     })
+    fileFieldIdPromises.set(key, promise)
   }
-  return attachmentFileFieldIdPromise
+  return promise
 }
 
 function toPhonesInput(phone: string) {
@@ -85,12 +88,12 @@ export interface TwentyContact {
 
 export async function findContactByEmail(email: string): Promise<TwentyContact | null> {
   const data = await gql<{ people: { edges: { node: TwentyContact }[] } }>(`
-    query FindByEmail($email: StringFilter!) {
+    query FindByEmail($email: String!) {
       people(filter: { emails: { primaryEmail: { eq: $email } } }) {
         edges { node { id name { firstName lastName } emails { primaryEmail } phones { primaryPhoneNumber } clientType stripeCustomerId } }
       }
     }
-  `, { email: { eq: email } })
+  `, { email })
   return data.people.edges[0]?.node ?? null
 }
 
@@ -164,7 +167,7 @@ export async function getActivePullForContact(contactId: string): Promise<{ id: 
     id: string
     returnDate: string
     stage: string
-    attachments: { edges: { node: { id: string; name: string; fullPath: string } }[] }
+    attachments: { edges: { node: { id: string; name: string; file: { url: string }[] } }[] }
   } }[] } }>(`
     query ActivePull($filter: PullFilterInput!) {
       pulls(filter: $filter) {
@@ -174,7 +177,7 @@ export async function getActivePullForContact(contactId: string): Promise<{ id: 
             returnDate
             stage
             attachments {
-              edges { node { id name fullPath } }
+              edges { node { id name file } }
             }
           }
         }
@@ -187,21 +190,24 @@ export async function getActivePullForContact(contactId: string): Promise<{ id: 
     id: node.id,
     returnDate: node.returnDate,
     stage: node.stage,
-    photos: node.attachments.edges.map(e => ({
-      id: e.node.id,
-      name: e.node.name,
-      url: `${TWENTY_BASE_URL}/files/${e.node.fullPath}`,
-    })),
+    photos: node.attachments.edges
+      .filter(e => e.node.file[0]?.url)
+      .map(e => ({
+        id: e.node.id,
+        name: e.node.name,
+        url: e.node.file[0].url,
+      })),
   }
 }
 
 export interface PullItem {
-  id: string
+  loanId: string
+  inventoryItemId: string
   itemId: string
   designer: string
   itemType: string
   color: string
-  status: string
+  outcome: string | null
 }
 
 export interface OpenPullSummary {
@@ -248,12 +254,18 @@ export async function listOpenPulls(): Promise<OpenPullSummary[]> {
   return summaries.filter((s): s is OpenPullSummary => s !== null)
 }
 
+interface PullItemLoanNode {
+  id: string
+  outcome: string | null
+  inventoryItem: { id: string; itemId: string; designer: string; itemType: string; color: string }
+}
+
 export async function getOpenPullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string; items: PullItem[] } | null> {
   const data = await gql<{ pulls: { edges: { node: {
     id: string
     returnDate: string
     stage: string
-    pull: { edges: { node: PullItem }[] }
+    pullItemLoans: { edges: { node: PullItemLoanNode }[] }
   } }[] } }>(`
     query OpenPull($filter: PullFilterInput!) {
       pulls(filter: $filter) {
@@ -262,8 +274,8 @@ export async function getOpenPullForContact(contactId: string): Promise<{ id: st
             id
             returnDate
             stage
-            pull {
-              edges { node { id itemId designer itemType color status } }
+            pullItemLoans {
+              edges { node { id outcome inventoryItem { id itemId designer itemType color } } }
             }
           }
         }
@@ -276,25 +288,42 @@ export async function getOpenPullForContact(contactId: string): Promise<{ id: st
     id: node.id,
     returnDate: node.returnDate,
     stage: node.stage,
-    items: node.pull.edges.map(e => e.node),
+    items: node.pullItemLoans.edges.map(e => ({
+      loanId: e.node.id,
+      inventoryItemId: e.node.inventoryItem.id,
+      itemId: e.node.inventoryItem.itemId,
+      designer: e.node.inventoryItem.designer,
+      itemType: e.node.inventoryItem.itemType,
+      color: e.node.inventoryItem.color,
+      outcome: e.node.outcome,
+    })),
   }
 }
 
 export type ItemCondition = 'AVAILABLE' | 'DAMAGED' | 'LOST'
 
-export async function returnPullItems(pullId: string, items: { id: string; condition: ItemCondition }[]): Promise<{ stage: string }> {
-  for (const { id, condition } of items) {
+export async function returnPullItems(
+  pullId: string,
+  items: { loanId: string; inventoryItemId: string; condition: ItemCondition; conditionNotes?: string }[],
+): Promise<{ stage: string }> {
+  for (const { loanId, inventoryItemId, condition, conditionNotes } of items) {
+    await gql(`
+      mutation UpdatePullItemLoan($id: ID!, $input: PullItemLoanUpdateInput!) {
+        updatePullItemLoan(id: $id, data: $input) { id outcome }
+      }
+    `, { id: loanId, input: { outcome: condition, ...(conditionNotes ? { conditionNotes } : {}) } })
+
     await gql(`
       mutation UpdateInventoryItem($id: ID!, $input: InventoryItemUpdateInput!) {
         updateInventoryItem(id: $id, data: $input) { id status }
       }
-    `, { id, input: { status: condition } })
+    `, { id: inventoryItemId, input: { status: condition } })
   }
 
   const pull = await getPullItemsById(pullId)
-  const allReturned = pull.items.every(item => item.status !== 'OUT')
+  const allAccountedFor = pull.items.every(item => item.outcome !== null)
 
-  if (allReturned) {
+  if (allAccountedFor) {
     await gql(`
       mutation UpdatePull($id: ID!, $input: PullUpdateInput!) {
         updatePull(id: $id, data: $input) { id stage }
@@ -307,17 +336,28 @@ export async function returnPullItems(pullId: string, items: { id: string; condi
 }
 
 async function getPullItemsById(pullId: string): Promise<{ stage: string; items: PullItem[] }> {
-  const data = await gql<{ pull: { stage: string; pull: { edges: { node: PullItem }[] } } }>(`
+  const data = await gql<{ pull: { stage: string; pullItemLoans: { edges: { node: PullItemLoanNode }[] } } }>(`
     query PullItemsById($id: ID!) {
       pull(filter: { id: { eq: $id } }) {
         stage
-        pull {
-          edges { node { id itemId designer itemType color status } }
+        pullItemLoans {
+          edges { node { id outcome inventoryItem { id itemId designer itemType color } } }
         }
       }
     }
   `, { id: pullId })
-  return { stage: data.pull.stage, items: data.pull.pull.edges.map(e => e.node) }
+  return {
+    stage: data.pull.stage,
+    items: data.pull.pullItemLoans.edges.map(e => ({
+      loanId: e.node.id,
+      inventoryItemId: e.node.inventoryItem.id,
+      itemId: e.node.inventoryItem.itemId,
+      designer: e.node.inventoryItem.designer,
+      itemType: e.node.inventoryItem.itemType,
+      color: e.node.inventoryItem.color,
+      outcome: e.node.outcome,
+    })),
+  }
 }
 
 // repAssigned intentionally left unset — no rep auth in onboarding yet (Clerk login planned separately).
@@ -333,21 +373,39 @@ export async function createPull(contactId: string, returnDate: string, clientNa
   return data.createPull
 }
 
-export async function uploadFileToTwenty(arrayBuffer: ArrayBuffer, filename: string, mimeType: string): Promise<string> {
+export async function markPullOut(pullId: string): Promise<void> {
+  await gql(`
+    mutation UpdatePull($id: ID!, $input: PullUpdateInput!) {
+      updatePull(id: $id, data: $input) { id stage }
+    }
+  `, { id: pullId, input: { stage: 'OUT' } })
+}
+
+export async function uploadFileToTwenty(
+  arrayBuffer: ArrayBuffer,
+  filename: string,
+  mimeType: string,
+  target: { objectName: string; fieldName: string } = { objectName: 'attachment', fieldName: 'file' },
+): Promise<string> {
   let lastError: unknown
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      return await uploadFileToTwentyOnce(arrayBuffer, filename, mimeType)
+      return await uploadFileToTwentyOnce(arrayBuffer, filename, mimeType, target)
     } catch (err) {
       lastError = err
-      attachmentFileFieldIdPromise = null
+      fileFieldIdPromises.delete(`${target.objectName}.${target.fieldName}`)
     }
   }
   throw lastError
 }
 
-async function uploadFileToTwentyOnce(arrayBuffer: ArrayBuffer, filename: string, mimeType: string): Promise<string> {
-  const fieldMetadataId = await getAttachmentFileFieldMetadataId()
+async function uploadFileToTwentyOnce(
+  arrayBuffer: ArrayBuffer,
+  filename: string,
+  mimeType: string,
+  target: { objectName: string; fieldName: string },
+): Promise<string> {
+  const fieldMetadataId = await getFileFieldMetadataId(target.objectName, target.fieldName)
   const uploadMutation = `
     mutation UploadFilesFieldFile($file: Upload!, $fieldMetadataId: String!) {
       uploadFilesFieldFile(file: $file, fieldMetadataId: $fieldMetadataId) { id }
@@ -402,26 +460,105 @@ function currentSeasonCode(): { seasonEnum: string; seasonCode: string } {
   return { seasonEnum, seasonCode }
 }
 
+interface FieldOption {
+  value: string
+  label: string
+  color?: string
+  position?: number
+}
+
+let itemTypeFieldMetadataIdPromise: Promise<{ id: string; options: FieldOption[] }> | null = null
+
+async function loadItemTypeFieldMetadata(): Promise<{ id: string; options: FieldOption[] }> {
+  const data = await metadataGql<{
+    objects: { edges: { node: { nameSingular: string; fields: { edges: { node: { id: string; name: string; options: FieldOption[] | null } }[] } } }[] }
+  }>(`
+    query ItemTypeField {
+      objects(paging: { first: 200 }) {
+        edges { node { nameSingular fields(paging: { first: 100 }) { edges { node { id name options } } } } }
+      }
+    }
+  `)
+  const inventoryItem = data.objects.edges.find(e => e.node.nameSingular === 'inventoryItem')
+  const field = inventoryItem?.node.fields.edges.find(e => e.node.name === 'itemType')
+  if (!field) throw new Error('inventoryItem.itemType field metadata not found')
+  return { id: field.node.id, options: field.node.options ?? [] }
+}
+
+async function getItemTypeFieldMetadata(forceRefresh = false): Promise<{ id: string; options: FieldOption[] }> {
+  if (forceRefresh || !itemTypeFieldMetadataIdPromise) {
+    itemTypeFieldMetadataIdPromise = loadItemTypeFieldMetadata().catch(err => {
+      itemTypeFieldMetadataIdPromise = null
+      throw err
+    })
+  }
+  return itemTypeFieldMetadataIdPromise
+}
+
+export async function getItemTypeOptions(): Promise<{ label: string; value: string }[]> {
+  const { options } = await getItemTypeFieldMetadata()
+  return options
+    .slice()
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    .map(o => ({ label: o.label, value: o.value }))
+}
+
+function toEnumValue(label: string): string {
+  return label
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
+
+const OPTION_COLORS = ['pink', 'purple', 'blue', 'gray', 'orange', 'yellow', 'brown', 'green', 'red', 'turquoise', 'sky']
+
+export async function ensureItemTypeOption(label: string): Promise<string> {
+  const value = toEnumValue(label)
+  if (!value) throw new Error('Item type must contain at least one letter or number')
+  const { id, options } = await getItemTypeFieldMetadata()
+  if (options.some(o => o.value === value)) return value
+
+  const updatedOptions = [...options, { label, value, color: OPTION_COLORS[options.length % OPTION_COLORS.length], position: options.length }]
+
+  try {
+    await metadataGql(`
+      mutation UpdateItemTypeField($id: UUID!, $input: UpdateFieldInput!) {
+        updateOneField(input: { id: $id, update: $input }) { id options }
+      }
+    `, { id, input: { options: updatedOptions } })
+  } catch (err) {
+    const { options: freshOptions } = await getItemTypeFieldMetadata(true)
+    if (freshOptions.some(o => o.value === value)) return value
+    throw err
+  }
+
+  await getItemTypeFieldMetadata(true)
+  return value
+}
+
 function designerInitials(designer: string): string {
-  return designer
+  const initials = designer
     .split(/\s+/)
     .map(word => word.replace(/[^a-zA-Z]/g, '').charAt(0))
     .filter(Boolean)
     .join('')
     .toUpperCase()
+  return initials || 'XX'
 }
 
 export async function createInventoryItem(
-  pullId: string,
   designer: string,
   color: string,
-  itemType: string,
+  itemTypeLabel: string,
   sequence: number,
-): Promise<{ id: string }> {
+  fileIds: string[] = [],
+): Promise<{ id: string; itemId: string }> {
   const { seasonEnum, seasonCode } = currentSeasonCode()
   const random = Math.floor(100 + Math.random() * 900)
   const sequenceCode = String(sequence).padStart(3, '0')
   const itemId = `${designerInitials(designer)}-${random}-${seasonCode}-${sequenceCode}`
+  const itemType = await ensureItemTypeOption(itemTypeLabel)
 
   const data = await gql<{ createInventoryItem: { id: string } }>(`
     mutation CreateInventoryItem($input: InventoryItemCreateInput!) {
@@ -435,26 +572,120 @@ export async function createInventoryItem(
       itemType,
       season: seasonEnum,
       status: 'OUT',
-      pullIdId: pullId,
+      ...(fileIds.length ? { itemImages: fileIds.map(fileId => ({ fileId, label: 'Photo' })) } : {}),
     },
   })
-  return data.createInventoryItem
+  return { ...data.createInventoryItem, itemId }
 }
 
-export async function attachFilesToItem(itemId: string, fileIds: string[]): Promise<void> {
-  for (const fileId of fileIds) {
-    await gql(`
-      mutation AttachFile($input: AttachmentCreateInput!) {
-        createAttachment(data: $input) { id }
+export async function addInventoryItemImagesIfMissing(
+  inventoryItemId: string,
+  fileIds: string[],
+): Promise<void> {
+  if (!fileIds.length) return
+
+  const data = await gql<{ inventoryItem: { itemImages: { fileId: string }[] | null } | null }>(`
+    query InventoryItemImages($id: ID!) {
+      inventoryItem(filter: { id: { eq: $id } }) { itemImages { fileId } }
+    }
+  `, { id: inventoryItemId })
+
+  if (data.inventoryItem?.itemImages?.length) return
+
+  await gql(`
+    mutation UpdateInventoryItemImages($id: ID!, $input: InventoryItemUpdateInput!) {
+      updateInventoryItem(id: $id, data: $input) { id }
+    }
+  `, {
+    id: inventoryItemId,
+    input: { itemImages: fileIds.map(fileId => ({ fileId, label: 'Photo' })) },
+  })
+}
+
+export async function getInventoryItemIdentifier(inventoryItemId: string): Promise<string> {
+  const data = await gql<{ inventoryItem: { itemId: string } | null }>(`
+    query InventoryItemIdentifier($id: ID!) {
+      inventoryItem(filter: { id: { eq: $id } }) { itemId }
+    }
+  `, { id: inventoryItemId })
+  return data.inventoryItem?.itemId ?? inventoryItemId
+}
+
+export interface InventoryItemSearchResult {
+  id: string
+  designer: string
+  color: string
+  itemType: string
+  status: string
+  lastRentedAt: string | null
+  lastOutcome: string | null
+}
+
+export async function searchInventoryItems(query: string): Promise<InventoryItemSearchResult[]> {
+  const data = await gql<{ inventoryItems: { edges: { node: {
+    id: string
+    designer: string
+    color: string
+    itemType: string
+    status: string
+    pullItemLoans: { edges: { node: { createdAt: string; outcome: string | null } }[] }
+  } }[] } }>(`
+    query SearchInventoryItems($filter: InventoryItemFilterInput!) {
+      inventoryItems(filter: $filter, first: 20) {
+        edges {
+          node {
+            id designer color itemType status
+            pullItemLoans(first: 1, orderBy: { createdAt: DescNullsLast }) {
+              edges { node { createdAt outcome } }
+            }
+          }
+        }
       }
-    `, {
-      input: {
-        targetInventoryItemId: itemId,
-        name: `photo-${fileId.slice(0, 8)}`,
-        file: [{ fileId, label: 'Photo' }],
-      },
-    })
-  }
+    }
+  `, {
+    filter: {
+      or: [
+        { designer: { ilike: `%${query}%` } },
+        { color: { ilike: `%${query}%` } },
+        { itemId: { ilike: `%${query}%` } },
+      ],
+    },
+  })
+  return data.inventoryItems.edges.map(e => {
+    const latest = e.node.pullItemLoans.edges[0]?.node ?? null
+    return {
+      id: e.node.id,
+      designer: e.node.designer,
+      color: e.node.color,
+      itemType: e.node.itemType,
+      status: e.node.status,
+      lastRentedAt: latest?.createdAt ?? null,
+      lastOutcome: latest?.outcome ?? null,
+    }
+  })
+}
+
+export async function createPullItemLoan(
+  pullId: string,
+  inventoryItemId: string,
+  itemIdentifier: string,
+  conditionNotes?: string,
+  fileIds: string[] = [],
+): Promise<{ id: string }> {
+  const data = await gql<{ createPullItemLoan: { id: string } }>(`
+    mutation CreatePullItemLoan($input: PullItemLoanCreateInput!) {
+      createPullItemLoan(data: $input) { id }
+    }
+  `, {
+    input: {
+      name: itemIdentifier,
+      pullId,
+      inventoryItemId,
+      ...(conditionNotes ? { conditionNotes } : {}),
+      photos: fileIds.map(fileId => ({ fileId, label: 'Photo' })),
+    },
+  })
+  return data.createPullItemLoan
 }
 
 export async function attachFilesToPull(pullId: string, fileIds: string[]): Promise<void> {
@@ -473,7 +704,7 @@ export async function attachFilesToPull(pullId: string, fileIds: string[]): Prom
   }
 }
 
-export async function attachFilesToContact(contactId: string, fileIds: string[]): Promise<void> {
+export async function attachFilesToContact(contactId: string, fileIds: string[], namePrefix = 'photo'): Promise<void> {
   for (const fileId of fileIds) {
     await gql(`
       mutation AttachFile($input: AttachmentCreateInput!) {
@@ -482,9 +713,38 @@ export async function attachFilesToContact(contactId: string, fileIds: string[])
     `, {
       input: {
         targetPersonId: contactId,
-        name: `photo-${fileId.slice(0, 8)}`,
+        name: `${namePrefix}-${fileId.slice(0, 8)}`,
         file: [{ fileId, label: 'Photo' }],
       },
     })
   }
+}
+
+const LICENSE_ATTACHMENT_PREFIX = 'license'
+
+export interface LicensePhoto {
+  attachmentId: string
+  url: string
+}
+
+export async function getLicensePhotosForContact(contactId: string): Promise<LicensePhoto[]> {
+  const data = await gql<{ person: { attachments: { edges: { node: {
+    id: string
+    name: string
+    createdAt: string
+    file: { url: string }[]
+  } }[] } } | null }>(`
+    query LicensePhotos($id: ID!) {
+      person(filter: { id: { eq: $id } }) {
+        attachments {
+          edges { node { id name createdAt file } }
+        }
+      }
+    }
+  `, { id: contactId })
+  const attachments = data.person?.attachments.edges.map(e => e.node) ?? []
+  return attachments
+    .filter(a => a.name.startsWith(`${LICENSE_ATTACHMENT_PREFIX}-`) && a.file[0]?.url)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .map(a => ({ attachmentId: a.id, url: a.file[0].url }))
 }
