@@ -17,12 +17,13 @@ interface OpenPullListEntry {
 }
 
 interface PullItem {
-  id: string
+  loanId: string
+  inventoryItemId: string
   itemId: string
   designer: string
   itemType: string
   color: string
-  status: string
+  outcome: string | null
 }
 
 interface OpenPull {
@@ -104,7 +105,11 @@ export default function ReturnFlow({ onDone }: Props) {
         setSearchError('No open pull found for this client.')
         return
       }
-      if (data.pull.items.length === 0 || data.pull.items.every((i: PullItem) => i.status !== 'OUT')) {
+      if (data.pull.items.length === 0) {
+        setSearchError('No items have been recorded for this pull yet.')
+        return
+      }
+      if (data.pull.items.every((i: PullItem) => i.outcome !== null)) {
         setSearchError('All items on this client’s pull have already been returned.')
         return
       }
@@ -112,7 +117,7 @@ export default function ReturnFlow({ onDone }: Props) {
       setClientName(`${entry.client.name.firstName} ${entry.client.name.lastName}`.trim())
       const initial: Record<string, ItemCondition | null> = {}
       for (const item of data.pull.items as PullItem[]) {
-        initial[item.id] = item.status === 'OUT' ? 'AVAILABLE' : null
+        initial[item.loanId] = item.outcome === null ? 'AVAILABLE' : null
       }
       setItemConditions(initial)
       setMode('items')
@@ -144,7 +149,10 @@ export default function ReturnFlow({ onDone }: Props) {
     try {
       const items = Object.entries(conditions)
         .filter((entry): entry is [string, ItemCondition] => !!entry[1])
-        .map(([id, condition]) => ({ id, condition }))
+        .map(([loanId, condition]) => {
+          const item = pull.items.find(i => i.loanId === loanId)
+          return { loanId, inventoryItemId: item?.inventoryItemId ?? '', condition }
+        })
       const res = await fetch('/api/return', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -211,21 +219,21 @@ export default function ReturnFlow({ onDone }: Props) {
             style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}
           >
             {pull.items.map(item => {
-              const alreadyBack = item.status !== 'OUT'
-              const condition = conditions[item.id]
+              const alreadyBack = item.outcome !== null
+              const condition = conditions[item.loanId]
               const checked = !!condition
               return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }} key={item.id}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }} key={item.loanId}>
                   <button
                     role="checkbox"
                     aria-checked={checked}
                     className="option-card"
-                    onClick={() => toggleItem(item.id)}
+                    onClick={() => toggleItem(item.loanId)}
                     disabled={alreadyBack}
                   >
                     <span className="option-card-label">{item.designer} — {item.itemType}</span>
                     <span className="option-card-sublabel">
-                      {item.color}{alreadyBack ? ` · Already ${item.status.toLowerCase()}` : ''}
+                      {item.color}{alreadyBack ? ` · Already ${item.outcome!.toLowerCase()}` : ''}
                     </span>
                   </button>
 
@@ -237,7 +245,7 @@ export default function ReturnFlow({ onDone }: Props) {
                           role="radio"
                           aria-checked={condition === c}
                           className="btn btn-ghost"
-                          onClick={() => setItemCondition(item.id, c)}
+                          onClick={() => setItemCondition(item.loanId, c)}
                           style={{
                             flex: 1,
                             fontSize: 'var(--text-xs)',

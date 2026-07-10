@@ -937,8 +937,11 @@
       <li><span>02</span>Users</li>
       <li><span>03</span>Object Model</li>
       <li><span>04</span>CRM Options</li>
-      <li><span>05</span>Automations</li>
-      <li><span>06</span>RAG Agent</li>
+      <li><span>05</span>n8n Pricing</li>
+      <li><span>06</span>Cost Summary</li>
+      <li><span>07</span>Automations</li>
+      <li><span>08</span>RAG Agent</li>
+      <li><span>09</span>Signups</li>
     </ul>
     <div class="draft-chip">Draft — Present &amp; Adjust</div>
   </div>
@@ -1270,14 +1273,14 @@
       </thead>
       <tbody>
         <tr>
-          <td class="crm-feature">Pricing (3 users)</td>
-          <td class="crm-recommended">$27/mo</td>
+          <td class="crm-feature">Pricing</td>
+          <td class="crm-recommended">$9/mo</td>
           <td>$60/mo</td>
           <td>$97/mo (flat)</td>
         </tr>
         <tr>
           <td class="crm-feature">Annual cost</td>
-          <td class="crm-recommended">~$324/yr</td>
+          <td class="crm-recommended">~$108/yr</td>
           <td>~$720/yr</td>
           <td>~$1,164/yr</td>
         </tr>
@@ -1539,7 +1542,7 @@
     <div class="section-rule"></div>
   </div>
   <h2 class="section-title reveal reveal-delay-1">Total<br>Cost Summary</h2>
-  <p class="rag-intro reveal reveal-delay-2">Full stack assuming Twenty CRM, n8n Cloud Starter, and RAG agent via Modal + OpenRouter. All prices in USD.</p>
+  <p class="rag-intro reveal reveal-delay-2">Full stack assuming Twenty CRM, n8n Cloud Starter, RAG agent via Modal + OpenRouter, DocuSign for contracts, and Railway for portal hosting. All prices in USD.</p>
 
   <div class="crm-table-wrap reveal reveal-delay-3">
     <table class="crm-table">
@@ -1554,15 +1557,33 @@
       <tbody>
         <tr>
           <td class="crm-feature">Twenty CRM</td>
-          <td>Contact records, pull workflow, pipeline, inventory — 3 users</td>
-          <td>$27/mo</td>
-          <td>$324/yr</td>
+          <td>Contact records, pull workflow, pipeline, inventory — unlimited users</td>
+          <td>$9/mo</td>
+          <td>$108/yr</td>
         </tr>
         <tr>
           <td class="crm-feature">n8n Cloud Starter</td>
           <td>All automations — reminders, Calendar sync, Drive watcher, agent triggers</td>
           <td>~$25/mo</td>
           <td>~$300/yr</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">DocuSign Business Pro</td>
+          <td>Contract generation + e-signatures — unlimited envelopes (20+ contracts/mo)</td>
+          <td>$25/mo</td>
+          <td>$300/yr</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Portal hosting (Railway)</td>
+          <td>Next.js onboarding + client portal — custom domain, zero-config deploy</td>
+          <td>$5/mo</td>
+          <td>$60/yr</td>
+        </tr>
+        <tr>
+          <td class="crm-feature">Stripe</td>
+          <td>Payment method capture during client onboarding — setup intents, no flat fee</td>
+          <td><span class="crm-yes">Pay-per-use</span></td>
+          <td><span class="crm-yes">—</span></td>
         </tr>
         <tr>
           <td class="crm-feature">Modal (Python hosting)</td>
@@ -1577,22 +1598,16 @@
           <td>~$12–$36/yr</td>
         </tr>
         <tr>
-          <td class="crm-feature">DocuSign Business Pro</td>
-          <td>Contract generation + e-signatures — unlimited envelopes (20+ contracts/mo)</td>
-          <td>$25/mo</td>
-          <td>$300/yr</td>
-        </tr>
-        <tr>
           <td class="crm-feature">Clerk (portal auth)</td>
           <td>Client portal login — free tier covers up to 10,000 MAU</td>
           <td><span class="crm-yes">$0</span></td>
           <td><span class="crm-yes">$0</span></td>
         </tr>
         <tr>
-          <td class="crm-feature">Portal hosting</td>
-          <td>Next.js client portal — Railway ($5/mo) or Vercel Pro ($20/mo)</td>
-          <td>$5–$20/mo</td>
-          <td>$60–$240/yr</td>
+          <td class="crm-feature">Google Workspace</td>
+          <td>Calendar (return date events), Drive (inventory photos), Sheets (inventory report)</td>
+          <td><span class="crm-yes">$0 (existing)</span></td>
+          <td><span class="crm-yes">$0 (existing)</span></td>
         </tr>
         <tr>
           <td class="crm-feature">Slack</td>
@@ -1608,9 +1623,9 @@
         </tr>
         <tr style="background: rgba(242,234,211,0.05);">
           <td class="crm-feature" style="color: var(--cream); border-top: 1px solid var(--cream-border);">Total</td>
-          <td style="border-top: 1px solid var(--cream-border); color: var(--text-sec);">Complete CRM + automation + AI agent + contracts + client portal</td>
-          <td style="border-top: 1px solid var(--cream-border);"><strong style="color: var(--cream); font-size: 16px;">~$83–$98/mo</strong></td>
-          <td style="border-top: 1px solid var(--cream-border);"><strong style="color: var(--cream); font-size: 16px;">~$996–$1,176/yr</strong></td>
+          <td style="border-top: 1px solid var(--cream-border); color: var(--text-sec);">Complete CRM + automation + AI agent + contracts + onboarding + client portal</td>
+          <td style="border-top: 1px solid var(--cream-border);"><strong style="color: var(--cream); font-size: 16px;">~$65–$70/mo</strong></td>
+          <td style="border-top: 1px solid var(--cream-border);"><strong style="color: var(--cream); font-size: 16px;">~$780–$840/yr</strong></td>
         </tr>
       </tbody>
     </table>
@@ -1674,8 +1689,8 @@
           </tr>
           <tr>
             <td class="crm-feature">Full stack total</td>
-            <td class="crm-recommended"><strong style="color: var(--cream);">~$83/mo</strong></td>
-            <td>~$98/mo</td>
+            <td class="crm-recommended"><strong style="color: var(--cream);">~$65/mo</strong></td>
+            <td>~$80/mo <span style="color:#555;font-size:11px">(swap Railway for Vercel Pro)</span></td>
           </tr>
         </tbody>
       </table>
@@ -1689,13 +1704,13 @@
   <div class="reveal" style="margin-top: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
     <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
       <div style="font-family: 'Phudu', sans-serif; font-size: 18px; color: var(--white); margin-bottom: 10px;">First month</div>
-      <div style="font-family: 'Phudu', sans-serif; font-size: 36px; color: var(--cream); margin-bottom: 8px;">~$78</div>
-      <div style="font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 300; color: var(--text-sec); line-height: 1.6;">Modal's one-time $30 signup credit offsets agent compute in month one — leaving CRM + n8n + DocuSign + portal hosting (Railway).</div>
+      <div style="font-family: 'Phudu', sans-serif; font-size: 36px; color: var(--cream); margin-bottom: 8px;">~$60</div>
+      <div style="font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 300; color: var(--text-sec); line-height: 1.6;">Modal's one-time $30 signup credit offsets agent compute in month one — leaving CRM + n8n + DocuSign + Railway portal hosting.</div>
     </div>
     <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 24px;">
       <div style="font-family: 'Phudu', sans-serif; font-size: 18px; color: var(--white); margin-bottom: 10px;">Ongoing monthly</div>
-      <div style="font-family: 'Phudu', sans-serif; font-size: 36px; color: var(--cream); margin-bottom: 8px;">~$83–$98</div>
-      <div style="font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 300; color: var(--text-sec); line-height: 1.6;">Railway at $83/mo or Vercel Pro at $98/mo — a fully automated showroom CRM with client portal, contracts, AI lookup, and Calendar sync.</div>
+      <div style="font-family: 'Phudu', sans-serif; font-size: 36px; color: var(--cream); margin-bottom: 8px;">~$65–$70</div>
+      <div style="font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 300; color: var(--text-sec); line-height: 1.6;">Fully automated showroom CRM with client onboarding, client portal, contracts, AI lookup, and Calendar sync — unlimited users on Twenty.</div>
     </div>
   </div>
 </section>
@@ -1891,7 +1906,7 @@
       <div class="rp-arrow">→</div>
       <div class="rp-step">
         <div class="rp-icon">🔄</div>
-        <div class="rp-name">Airtable Sync</div>
+        <div class="rp-name">Twenty CRM</div>
         <div class="rp-desc">Inventory records synced to CRM — items linked to pulls, status updated in real time</div>
       </div>
       <div class="rp-arrow">→</div>
@@ -1946,14 +1961,14 @@
       </div>
       <div class="stack-row">
         <div class="stack-tool">n8n</div>
-        <div class="stack-role">Watches Drive, parses filenames, writes to Sheet and Airtable, triggers RAG queries</div>
+        <div class="stack-role">Watches Drive, parses filenames, writes to Sheet and Twenty CRM, triggers RAG queries</div>
       </div>
       <div class="stack-row">
         <div class="stack-tool">Google Sheets</div>
         <div class="stack-role">Auto-generated written inventory — human-readable and editable</div>
       </div>
       <div class="stack-row">
-        <div class="stack-tool">Airtable</div>
+        <div class="stack-tool">Twenty CRM</div>
         <div class="stack-role">CRM database — pull records, client records, inventory status</div>
       </div>
       <div class="stack-row">
@@ -1962,11 +1977,79 @@
       </div>
       <div class="stack-row highlight-row">
         <div class="stack-tool">RAG Agent</div>
-        <div class="stack-role">Reads live Airtable + Sheet data, answers natural language queries from the team</div>
+        <div class="stack-role">Reads live Twenty CRM + Sheet data, answers natural language queries from the team</div>
       </div>
     </div>
   </div>
 
+</section>
+
+<!-- ── SIGNUPS ── -->
+<section id="signups">
+  <div class="section-eyebrow reveal">
+    <span class="section-num">09</span>
+    <div class="section-rule"></div>
+  </div>
+  <h2 class="section-title reveal reveal-delay-1">Account<br><em>Signups</em></h2>
+  <p class="rag-intro reveal reveal-delay-2">Accounts needed before build can begin. Client handles Priority 1 — we handle Priority 3.</p>
+
+  <!-- CLIENT SIGNUPS -->
+  <div class="rag-block reveal">
+    <div class="rag-block-label">Priority 1 — Client Signs Up</div>
+    <div class="stack-grid">
+      <div class="stack-row">
+        <div class="stack-tool">Twenty</div>
+        <div class="stack-role">twenty.com — Pro plan · $9/mo · Invite us as a member once workspace is created</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">Stripe</div>
+        <div class="stack-role">stripe.com — Free to sign up · Pay per transaction · Share Publishable + Secret keys</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">DocuSign</div>
+        <div class="stack-role">docusign.com — Business Pro · $25/mo · Required for API access and contract generation</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">n8n</div>
+        <div class="stack-role">n8n.io — Cloud Starter · ~$25/mo · Share workspace access once created</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">Railway</div>
+        <div class="stack-role">railway.app — $5/mo · Hosts the client portal and onboarding app · Share project access</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">Clerk</div>
+        <div class="stack-role">clerk.com — Free up to 10,000 MAU · Portal authentication · Share API keys</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">Slack</div>
+        <div class="stack-role">slack.com — Free plan · Team workspace for AI agent interface · Invite us to the workspace</div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-tool">Google</div>
+        <div class="stack-role">Google Workspace (if not already active) — Calendar, Drive, Sheets · Share service account credentials</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEV SIGNUPS -->
+  <div class="rag-block reveal">
+    <div class="rag-block-label">Priority 2 — We Sign Up (Dev-Side)</div>
+    <div class="stack-grid">
+      <div class="stack-row highlight-row">
+        <div class="stack-tool">Modal</div>
+        <div class="stack-role">modal.com — $30 free signup credit · Serverless Python hosting for RAG agent</div>
+      </div>
+      <div class="stack-row highlight-row">
+        <div class="stack-tool">OpenRouter</div>
+        <div class="stack-role">openrouter.ai — Pay per use · ~$1–$3/mo · Powers the AI inventory agent via Claude Haiku</div>
+      </div>
+      <div class="stack-row highlight-row">
+        <div class="stack-tool">Pinecone</div>
+        <div class="stack-role">pinecone.io — Free tier · Vector store for inventory semantic search</div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- ── FOOTER ── -->

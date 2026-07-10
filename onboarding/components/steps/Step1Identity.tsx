@@ -14,9 +14,10 @@ interface Props {
     hasCardOnFile: boolean
     existingStripeCustomerId: string | null
   }) => void
+  onBack: () => void
 }
 
-export default function Step1Identity({ initialData, onComplete }: Props) {
+export default function Step1Identity({ initialData, onComplete, onBack }: Props) {
   const [firstName, setFirstName] = useState(initialData.firstName)
   const [lastName, setLastName] = useState(initialData.lastName)
   const [email, setEmail] = useState(initialData.email)
@@ -157,6 +158,7 @@ export default function Step1Identity({ initialData, onComplete }: Props) {
       </div>
 
       <div className="nav-bar">
+        <button className="btn btn-ghost" onClick={onBack} disabled={loading}>← Back</button>
         <button
           className="btn btn-primary"
           onClick={handleNext}
