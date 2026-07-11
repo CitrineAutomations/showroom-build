@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     const createdLoanIds: string[] = []
+    const statusWarnings: string[] = []
     for (let i = 0; i < items.length; i++) {
       const item = items[i] as ItemInput
       const loanFileIds = Array.isArray(item.loanFileIds) ? item.loanFileIds : []
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
             await markInventoryItemOut(inventoryItemId)
           } catch (statusErr) {
             console.error(`[api/pull-items] loan ${loan.id} created but failed to mark item ${inventoryItemId} OUT`, statusErr)
+            statusWarnings.push(`Item ${i + 1} (${label}): loan created but still shows AVAILABLE in Twenty — update its status manually.`)
           }
         }
       } catch (err) {
@@ -114,7 +116,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ loanIds: createdLoanIds })
+    return NextResponse.json({
+      loanIds: createdLoanIds,
+      ...(statusWarnings.length ? { warnings: statusWarnings } : {}),
+    })
   } catch (err) {
     console.error('[api/pull-items]', err)
     const message = err instanceof Error ? err.message : 'Failed to create items'

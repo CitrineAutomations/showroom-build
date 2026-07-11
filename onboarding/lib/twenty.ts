@@ -618,12 +618,22 @@ export async function addInventoryItemImagesIfMissing(
   })
 }
 
-export async function markInventoryItemOut(inventoryItemId: string): Promise<void> {
-  await gql(`
-    mutation MarkInventoryItemOut($id: ID!, $input: InventoryItemUpdateInput!) {
-      updateInventoryItem(id: $id, data: $input) { id status }
+export async function markInventoryItemOut(inventoryItemId: string, attempts = 3): Promise<void> {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      await gql(`
+        mutation MarkInventoryItemOut($id: ID!, $input: InventoryItemUpdateInput!) {
+          updateInventoryItem(id: $id, data: $input) { id status }
+        }
+      `, { id: inventoryItemId, input: { status: 'OUT' } })
+      return
+    } catch (err) {
+      lastError = err
+      if (attempt < attempts) await new Promise(resolve => setTimeout(resolve, 400 * attempt))
     }
-  `, { id: inventoryItemId, input: { status: 'OUT' } })
+  }
+  throw lastError
 }
 
 export async function getInventoryItemStatus(inventoryItemId: string): Promise<string | null> {
