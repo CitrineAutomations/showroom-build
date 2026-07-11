@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier, getInventoryItemStatus, markInventoryItemOut } from '@/lib/twenty'
+import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier, getInventoryItemStatus, markInventoryItemOut, reconcileInventoryItemStatus } from '@/lib/twenty'
 
 const MAX_ITEMS = 20
 
@@ -89,8 +89,14 @@ export async function POST(req: NextRequest) {
           try {
             await markInventoryItemOut(inventoryItemId)
           } catch (statusErr) {
-            console.error(`[api/pull-items] loan ${loan.id} created but failed to mark item ${inventoryItemId} OUT`, statusErr)
-            statusWarnings.push(`Item ${i + 1} (${label}): loan created but still shows AVAILABLE in Twenty — update its status manually.`)
+            console.error(`[api/pull-items] loan ${loan.id} created but failed to mark item ${inventoryItemId} OUT after retries — attempting reconciliation`, statusErr)
+            // Last resort: re-check the item against its just-created loan and
+            // retry the status write once more via a fresh code path, in case the
+            // prior failures were transient rather than a persistent outage.
+            const reconciled = await reconcileInventoryItemStatus(inventoryItemId).catch(() => null)
+            if (!reconciled?.fixed) {
+              statusWarnings.push(`Item ${i + 1} (${label}): loan created but still shows AVAILABLE in Twenty — update its status manually.`)
+            }
           }
         }
       } catch (err) {

@@ -654,6 +654,50 @@ export async function getInventoryItemIdentifier(inventoryItemId: string): Promi
   return data.inventoryItem?.itemId ?? inventoryItemId
 }
 
+export interface StatusDriftResult {
+  inventoryItemId: string
+  itemId: string
+  wasDrifted: boolean
+  fixed: boolean
+}
+
+// Self-heals the case where a PullItemLoan was created successfully but the
+// InventoryItem's status update failed (even after markInventoryItemOut's
+// retries) — checks whether the item has an active (outcome-less) loan while
+// still showing AVAILABLE, and flips it to OUT if so.
+export async function reconcileInventoryItemStatus(inventoryItemId: string): Promise<StatusDriftResult> {
+  const data = await gql<{ inventoryItem: {
+    itemId: string
+    status: string
+    pullItemLoans: { edges: { node: { outcome: string | null } }[] }
+  } | null }>(`
+    query InventoryItemDrift($id: ID!) {
+      inventoryItem(filter: { id: { eq: $id } }) {
+        itemId
+        status
+        pullItemLoans(first: 1, orderBy: { createdAt: DescNullsLast }) {
+          edges { node { outcome } }
+        }
+      }
+    }
+  `, { id: inventoryItemId })
+
+  const node = data.inventoryItem
+  const itemId = node?.itemId ?? inventoryItemId
+  const latestLoan = node?.pullItemLoans.edges[0]?.node ?? null
+  const hasActiveLoan = latestLoan !== null && latestLoan.outcome === null
+  const wasDrifted = !!node && node.status === 'AVAILABLE' && hasActiveLoan
+
+  if (!wasDrifted) return { inventoryItemId, itemId, wasDrifted: false, fixed: false }
+
+  try {
+    await markInventoryItemOut(inventoryItemId)
+    return { inventoryItemId, itemId, wasDrifted: true, fixed: true }
+  } catch {
+    return { inventoryItemId, itemId, wasDrifted: true, fixed: false }
+  }
+}
+
 export interface InventoryItemSearchResult {
   id: string
   designer: string
