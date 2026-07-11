@@ -26,13 +26,13 @@ interface PullNode {
         id: string
         outcome: string | null
         conditionNotes: string | null
+        photos: Array<{ fileId: string; label: string; extension: string }>
         inventoryItem: {
           id: string
           itemId: string
           designer: string
           color: string | null
           season: string | null
-          itemImages: Array<{ fileId: string; label: string; extension: string }>
         }
       }
     }>
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
 
   const items = pull.pullItemLoans.edges.map((e) => ({
     ...e.node.inventoryItem,
-    photo: e.node.inventoryItem.itemImages,
+    photo: e.node.photos,
   }))
   const clientName = `${pull.clientId.name.firstName} ${pull.clientId.name.lastName}`
   const isOverdue = pull.stage === 'OVERDUE'

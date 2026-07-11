@@ -27,17 +27,17 @@ export const GET_ACTIVE_PULL = `
                 id
                 outcome
                 conditionNotes
+                photos {
+                  fileId
+                  label
+                  extension
+                }
                 inventoryItem {
                   id
                   itemId
                   designer
                   color
                   season
-                  itemImages {
-                    fileId
-                    label
-                    extension
-                  }
                 }
               }
             }
