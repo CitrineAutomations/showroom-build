@@ -183,7 +183,7 @@ export async function getActivePullForContact(contactId: string): Promise<{ id: 
         }
       }
     }
-  `, { filter: { clientId: { id: { eq: contactId } }, stage: { in: ['VISITED', 'OUT'] } } })
+  `, { filter: { clientId: { id: { eq: contactId } }, stage: { in: ['VISITED', 'OUT', 'DUE_SOON', 'OVERDUE'] } } })
   const node = data.pulls.edges[0]?.node
   if (!node) return null
   return {
@@ -578,6 +578,14 @@ export async function createInventoryItem(
   return { ...data.createInventoryItem, itemId }
 }
 
+export async function deleteInventoryItem(inventoryItemId: string): Promise<void> {
+  await gql(`
+    mutation DeleteInventoryItem($id: ID!) {
+      deleteInventoryItem(id: $id) { id }
+    }
+  `, { id: inventoryItemId })
+}
+
 export async function addInventoryItemImagesIfMissing(
   inventoryItemId: string,
   fileIds: string[],
@@ -590,7 +598,10 @@ export async function addInventoryItemImagesIfMissing(
     }
   `, { id: inventoryItemId })
 
-  if (data.inventoryItem?.itemImages?.length) return
+  const existing = data.inventoryItem?.itemImages ?? []
+  const existingIds = new Set(existing.map(img => img.fileId))
+  const newFileIds = fileIds.filter(fileId => !existingIds.has(fileId))
+  if (!newFileIds.length) return
 
   await gql(`
     mutation UpdateInventoryItemImages($id: ID!, $input: InventoryItemUpdateInput!) {
@@ -598,7 +609,12 @@ export async function addInventoryItemImagesIfMissing(
     }
   `, {
     id: inventoryItemId,
-    input: { itemImages: fileIds.map(fileId => ({ fileId, label: 'Photo' })) },
+    input: {
+      itemImages: [
+        ...existing.map(img => ({ fileId: img.fileId, label: 'Photo' })),
+        ...newFileIds.map(fileId => ({ fileId, label: 'Photo' })),
+      ],
+    },
   })
 }
 
@@ -644,10 +660,15 @@ export async function searchInventoryItems(query: string): Promise<InventoryItem
     }
   `, {
     filter: {
-      or: [
-        { designer: { ilike: `%${query}%` } },
-        { color: { ilike: `%${query}%` } },
-        { itemId: { ilike: `%${query}%` } },
+      and: [
+        { status: { eq: 'AVAILABLE' } },
+        {
+          or: [
+            { designer: { ilike: `%${query}%` } },
+            { color: { ilike: `%${query}%` } },
+            { itemId: { ilike: `%${query}%` } },
+          ],
+        },
       ],
     },
   })

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, getInventoryItemIdentifier } from '@/lib/twenty'
+import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier } from '@/lib/twenty'
 
 const MAX_ITEMS = 20
 
@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       const item = items[i] as ItemInput
       const fileIds = Array.isArray(item.fileIds) ? item.fileIds : []
       const label = item.mode === 'new' ? item.designer : `existing item ${item.inventoryItemId.slice(0, 8)}`
+      let createdNewInventoryItemId: string | null = null
       try {
         let inventoryItemId: string
         let itemIdentifier: string
@@ -64,6 +65,7 @@ export async function POST(req: NextRequest) {
           const created = await createInventoryItem(item.designer, item.color, item.itemType, i + 1, fileIds)
           inventoryItemId = created.id
           itemIdentifier = created.itemId
+          createdNewInventoryItemId = created.id
         } else {
           inventoryItemId = item.inventoryItemId
           itemIdentifier = await getInventoryItemIdentifier(inventoryItemId)
@@ -72,6 +74,15 @@ export async function POST(req: NextRequest) {
         const loan = await createPullItemLoan(pullId, inventoryItemId, itemIdentifier, item.conditionNotes, fileIds)
         createdLoanIds.push(loan.id)
       } catch (err) {
+        // If we created a new InventoryItem for this card but the loan write failed,
+        // remove it so a retry doesn't leave an orphaned OUT item and create a duplicate.
+        if (createdNewInventoryItemId) {
+          try {
+            await deleteInventoryItem(createdNewInventoryItemId)
+          } catch {
+            // best-effort cleanup; surface the original error below regardless
+          }
+        }
         const message = err instanceof Error ? err.message : 'Failed to create item'
         const stage = item.mode === 'new' ? 'creating new item' : 'linking existing item'
         return NextResponse.json(
