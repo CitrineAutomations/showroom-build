@@ -618,6 +618,22 @@ export async function addInventoryItemImagesIfMissing(
   })
 }
 
+export async function markInventoryItemOut(inventoryItemId: string): Promise<void> {
+  await gql(`
+    mutation MarkInventoryItemOut($id: ID!, $input: InventoryItemUpdateInput!) {
+      updateInventoryItem(id: $id, data: $input) { id status }
+    }
+  `, { id: inventoryItemId, input: { status: 'OUT' } })
+}
+
+export async function markInventoryItemAvailable(inventoryItemId: string): Promise<void> {
+  await gql(`
+    mutation MarkInventoryItemAvailable($id: ID!, $input: InventoryItemUpdateInput!) {
+      updateInventoryItem(id: $id, data: $input) { id status }
+    }
+  `, { id: inventoryItemId, input: { status: 'AVAILABLE' } })
+}
+
 export async function getInventoryItemStatus(inventoryItemId: string): Promise<string | null> {
   const data = await gql<{ inventoryItem: { status: string } | null }>(`
     query InventoryItemStatus($id: ID!) {

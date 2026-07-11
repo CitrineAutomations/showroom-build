@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier, getInventoryItemStatus } from '@/lib/twenty'
+import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier, getInventoryItemStatus, markInventoryItemOut, markInventoryItemAvailable } from '@/lib/twenty'
 
 const MAX_ITEMS = 20
 
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       const itemFileIds = Array.isArray(item.itemFileIds) ? item.itemFileIds : []
       const label = item.mode === 'new' ? item.designer : `existing item ${item.inventoryItemId.slice(0, 8)}`
       let createdNewInventoryItemId: string | null = null
+      let markedOutExistingItemId: string | null = null
       try {
         let inventoryItemId: string
         let itemIdentifier: string
@@ -77,12 +78,16 @@ export async function POST(req: NextRequest) {
           }
           itemIdentifier = await getInventoryItemIdentifier(inventoryItemId)
           await addInventoryItemImagesIfMissing(inventoryItemId, itemFileIds)
+          await markInventoryItemOut(inventoryItemId)
+          markedOutExistingItemId = inventoryItemId
         }
         const loan = await createPullItemLoan(pullId, inventoryItemId, itemIdentifier, item.conditionNotes, loanFileIds)
         createdLoanIds.push(loan.id)
       } catch (err) {
         // If we created a new InventoryItem for this card but the loan write failed,
         // remove it so a retry doesn't leave an orphaned OUT item and create a duplicate.
+        // If we flipped an existing item to OUT but the loan write failed, revert it
+        // to AVAILABLE so it isn't stranded as checked-out with no loan behind it.
         let cleanupFailed = false
         if (createdNewInventoryItemId) {
           try {
@@ -90,11 +95,19 @@ export async function POST(req: NextRequest) {
           } catch {
             cleanupFailed = true
           }
+        } else if (markedOutExistingItemId) {
+          try {
+            await markInventoryItemAvailable(markedOutExistingItemId)
+          } catch {
+            cleanupFailed = true
+          }
         }
         const message = err instanceof Error ? err.message : 'Failed to create item'
         const stage = item.mode === 'new' ? 'creating new item' : 'linking existing item'
         const cleanupNote = cleanupFailed
-          ? ` (also failed to remove the partially-created inventory item ${createdNewInventoryItemId} — remove it manually before retrying to avoid a duplicate)`
+          ? createdNewInventoryItemId
+            ? ` (also failed to remove the partially-created inventory item ${createdNewInventoryItemId} — remove it manually before retrying to avoid a duplicate)`
+            : ` (also failed to revert item status back to available — update it manually in Twenty before retrying)`
           : ''
         return NextResponse.json(
           { error: `Item ${i + 1} (${label}), ${stage}: ${message}${cleanupNote}`, createdLoanIds },
