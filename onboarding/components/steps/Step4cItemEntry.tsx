@@ -164,7 +164,7 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
     patchCard(localId, { mode: 'existing', selectedItem: null, designer: '', color: '', itemType: '', itemTypeOther: false, errors: {} })
   }
 
-  async function uploadFile(file: File, target: string): Promise<string | null> {
+  async function uploadFileOnce(file: File, target: string): Promise<string | null> {
     const form = new FormData()
     form.append('file', file)
     form.append('target', target)
@@ -172,6 +172,19 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
     if (!res.ok) return null
     const data = await res.json()
     return data.fileId as string
+  }
+
+  // Retries independently per target so a transient failure on one of the two
+  // scoped uploads doesn't strand the other's already-successful fileId — Twenty
+  // has no mutation to delete an unlinked uploaded file, so avoiding the failure
+  // in the first place is the only real mitigation.
+  async function uploadFile(file: File, target: string, attempts = 3): Promise<string | null> {
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      const fileId = await uploadFileOnce(file, target)
+      if (fileId) return fileId
+      if (attempt < attempts) await new Promise(resolve => setTimeout(resolve, 400 * attempt))
+    }
+    return null
   }
 
   async function handleFiles(cardLocalId: string, files: FileList) {

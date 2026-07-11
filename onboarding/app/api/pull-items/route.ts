@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier, getInventoryItemStatus, markInventoryItemOut, markInventoryItemAvailable } from '@/lib/twenty'
+import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier, getInventoryItemStatus, markInventoryItemOut } from '@/lib/twenty'
 
 const MAX_ITEMS = 20
 
@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
       const itemFileIds = Array.isArray(item.itemFileIds) ? item.itemFileIds : []
       const label = item.mode === 'new' ? item.designer : `existing item ${item.inventoryItemId.slice(0, 8)}`
       let createdNewInventoryItemId: string | null = null
-      let markedOutExistingItemId: string | null = null
       try {
         let inventoryItemId: string
         let itemIdentifier: string
@@ -78,16 +77,23 @@ export async function POST(req: NextRequest) {
           }
           itemIdentifier = await getInventoryItemIdentifier(inventoryItemId)
           await addInventoryItemImagesIfMissing(inventoryItemId, itemFileIds)
-          await markInventoryItemOut(inventoryItemId)
-          markedOutExistingItemId = inventoryItemId
         }
+        // Create the loan before flipping status: the loan is the source of truth for
+        // "is this item checked out", so if loan creation fails there's nothing to roll
+        // back. Marking status after loan creation avoids the race where a rollback could
+        // clobber a status change made by a different concurrent pull of the same item.
         const loan = await createPullItemLoan(pullId, inventoryItemId, itemIdentifier, item.conditionNotes, loanFileIds)
         createdLoanIds.push(loan.id)
+        if (item.mode === 'existing') {
+          try {
+            await markInventoryItemOut(inventoryItemId)
+          } catch (statusErr) {
+            console.error(`[api/pull-items] loan ${loan.id} created but failed to mark item ${inventoryItemId} OUT`, statusErr)
+          }
+        }
       } catch (err) {
         // If we created a new InventoryItem for this card but the loan write failed,
         // remove it so a retry doesn't leave an orphaned OUT item and create a duplicate.
-        // If we flipped an existing item to OUT but the loan write failed, revert it
-        // to AVAILABLE so it isn't stranded as checked-out with no loan behind it.
         let cleanupFailed = false
         if (createdNewInventoryItemId) {
           try {
@@ -95,25 +101,11 @@ export async function POST(req: NextRequest) {
           } catch {
             cleanupFailed = true
           }
-        } else if (markedOutExistingItemId) {
-          try {
-            // Only revert to AVAILABLE if it's still OUT from this attempt — if another
-            // pull or a manual update already changed it, leave that state alone rather
-            // than clobbering it.
-            const currentStatus = await getInventoryItemStatus(markedOutExistingItemId)
-            if (currentStatus === 'OUT') {
-              await markInventoryItemAvailable(markedOutExistingItemId)
-            }
-          } catch {
-            cleanupFailed = true
-          }
         }
         const message = err instanceof Error ? err.message : 'Failed to create item'
         const stage = item.mode === 'new' ? 'creating new item' : 'linking existing item'
         const cleanupNote = cleanupFailed
-          ? createdNewInventoryItemId
-            ? ` (also failed to remove the partially-created inventory item ${createdNewInventoryItemId} — remove it manually before retrying to avoid a duplicate)`
-            : ` (also failed to revert item status back to available — update it manually in Twenty before retrying)`
+          ? ` (also failed to remove the partially-created inventory item ${createdNewInventoryItemId} — remove it manually before retrying to avoid a duplicate)`
           : ''
         return NextResponse.json(
           { error: `Item ${i + 1} (${label}), ${stage}: ${message}${cleanupNote}`, createdLoanIds },
