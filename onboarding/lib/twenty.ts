@@ -308,14 +308,35 @@ export type ItemCondition = 'AVAILABLE' | 'DAMAGED' | 'LOST'
 
 export async function returnPullItems(
   pullId: string,
-  items: { loanId: string; inventoryItemId: string; condition: ItemCondition; conditionNotes?: string }[],
+  items: { loanId: string; inventoryItemId: string; condition: ItemCondition; conditionNotes?: string; loanFileIds?: string[] }[],
 ): Promise<{ stage: string }> {
-  for (const { loanId, inventoryItemId, condition, conditionNotes } of items) {
+  for (const { loanId, inventoryItemId, condition, conditionNotes, loanFileIds } of items) {
+    let photos: { fileId: string; label: string }[] | undefined
+    if (loanFileIds?.length) {
+      const existing = await gql<{ pullItemLoan: { photos: { fileId: string }[] | null } | null }>(`
+        query LoanPhotos($id: ID!) {
+          pullItemLoan(filter: { id: { eq: $id } }) { photos { fileId } }
+        }
+      `, { id: loanId })
+      const existingPhotos = existing.pullItemLoan?.photos ?? []
+      photos = [
+        ...existingPhotos.map(p => ({ fileId: p.fileId, label: 'Photo' })),
+        ...loanFileIds.map(fileId => ({ fileId, label: 'Damage Photo' })),
+      ]
+    }
+
     await gql(`
       mutation UpdatePullItemLoan($id: ID!, $input: PullItemLoanUpdateInput!) {
         updatePullItemLoan(id: $id, data: $input) { id outcome }
       }
-    `, { id: loanId, input: { outcome: condition, ...(conditionNotes ? { conditionNotes } : {}) } })
+    `, {
+      id: loanId,
+      input: {
+        outcome: condition,
+        ...(conditionNotes ? { conditionNotes } : {}),
+        ...(photos ? { photos } : {}),
+      },
+    })
 
     await gql(`
       mutation UpdateInventoryItem($id: ID!, $input: InventoryItemUpdateInput!) {

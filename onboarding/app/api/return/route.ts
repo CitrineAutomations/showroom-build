@@ -25,13 +25,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'pullId and items are required' }, { status: 400 })
     }
     const invalid = items.some(
-      (item: { loanId?: unknown; inventoryItemId?: unknown; condition?: unknown }) =>
+      (item: { loanId?: unknown; inventoryItemId?: unknown; condition?: unknown; conditionNotes?: unknown; loanFileIds?: unknown }) =>
         typeof item.loanId !== 'string' ||
         typeof item.inventoryItemId !== 'string' ||
-        !VALID_CONDITIONS.includes(item.condition as ItemCondition)
+        !VALID_CONDITIONS.includes(item.condition as ItemCondition) ||
+        (item.conditionNotes !== undefined && typeof item.conditionNotes !== 'string') ||
+        (item.loanFileIds !== undefined && !(Array.isArray(item.loanFileIds) && item.loanFileIds.every((id: unknown) => typeof id === 'string')))
     )
     if (invalid) {
       return NextResponse.json({ error: 'Each item requires a loanId, inventoryItemId, and a valid condition' }, { status: 400 })
+    }
+    const damagedMissingProof = items.some(
+      (item: { condition: ItemCondition; conditionNotes?: string; loanFileIds?: string[] }) =>
+        item.condition === 'DAMAGED' && (!item.conditionNotes?.trim() || !item.loanFileIds?.length)
+    )
+    if (damagedMissingProof) {
+      return NextResponse.json({ error: 'Damaged items require condition notes and at least one photo' }, { status: 400 })
     }
     const result = await returnPullItems(pullId, items)
     return NextResponse.json(result)
