@@ -235,6 +235,7 @@ export default function OnboardingPage() {
           )}
           {step === 3 && (
             <Step2ClientType
+              contactId={formData.contactId}
               selected={formData.clientType}
               onSelect={ct => updateForm({ clientType: ct })}
               onNext={goNext}

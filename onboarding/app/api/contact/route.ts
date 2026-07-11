@@ -33,3 +33,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const { contactId, clientType } = await req.json()
+    if (!contactId || !clientType) {
+      return NextResponse.json({ error: 'contactId and clientType are required' }, { status: 400 })
+    }
+
+    await updateContact(contactId, { clientType })
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    console.error('[api/contact PATCH]', err)
+    const message = err instanceof Error ? err.message : 'CRM unavailable'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}
