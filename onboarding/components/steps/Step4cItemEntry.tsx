@@ -5,7 +5,7 @@ import { Camera, Plus, X, Loader2, AlertCircle, Search, CheckCircle2 } from 'luc
 
 interface Props {
   pullId: string | null
-  onComplete: () => void
+  onComplete: (photoFileIds: string[]) => void
   onBack: () => void
 }
 
@@ -42,7 +42,7 @@ interface ItemCard {
   errors: { designer?: string; color?: string; itemType?: string }
 }
 
-const ITEM_TYPES = [
+const FALLBACK_ITEM_TYPES = [
   { label: 'Dress', value: 'DRESS' },
   { label: 'Mini Dress', value: 'MINI_DRESS' },
   { label: 'Maxi Dress', value: 'MAXI_DRESS' },
@@ -54,7 +54,6 @@ const ITEM_TYPES = [
   { label: 'Bag', value: 'BAG' },
   { label: 'Shoes', value: 'SHOES' },
   { label: 'Accessory', value: 'ACCESSORY' },
-  { label: 'Other…', value: 'OTHER' },
 ]
 
 const MAX_ITEMS = 20
@@ -92,7 +91,20 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
   const [cards, setCards] = useState<ItemCard[]>(cardsRef.current)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [itemTypes, setItemTypes] = useState(FALLBACK_ITEM_TYPES)
   const searchTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/item-types')
+      .then(res => res.json())
+      .then(data => {
+        if (cancelled) return
+        if (Array.isArray(data.options) && data.options.length > 0) setItemTypes(data.options)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   function updateCards(next: ItemCard[]) {
     cardsRef.current = next
@@ -232,7 +244,8 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
     setSubmitting(true)
     setSubmitError(null)
     try {
-      const items = cardsRef.current.map(card => {
+      const submittedCards = cardsRef.current
+      const items = submittedCards.map(card => {
         const fileIds = card.photos.filter(p => p.state === 'done' && p.fileId).map(p => p.fileId!)
         if (card.mode === 'existing' && card.selectedItem) {
           return {
@@ -259,10 +272,19 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
       const data = await res.json()
       if (!res.ok) {
         const savedCount = Array.isArray(data.createdLoanIds) ? data.createdLoanIds.length : 0
-        const prefix = savedCount > 0 ? `${savedCount} item${savedCount > 1 ? 's' : ''} saved. ` : ''
+        if (savedCount > 0) {
+          // Drop the cards that already succeeded (matched against the snapshot
+          // that was actually submitted, not any later edits) so retry doesn't
+          // resubmit their fileIds — Twenty rejects re-linking a file already
+          // attached to the loan created for that card.
+          const succeededIds = new Set(submittedCards.slice(0, savedCount).map(c => c.localId))
+          updateCards(cardsRef.current.filter(c => !succeededIds.has(c.localId)))
+        }
+        const prefix = savedCount > 0 ? `${savedCount} item${savedCount > 1 ? 's' : ''} already saved — retry the rest. ` : ''
         throw new Error(`${prefix}${data.error || 'Failed to save items'}`)
       }
-      onComplete()
+      const photoFileIds = items.flatMap(item => item.fileIds)
+      onComplete(photoFileIds)
     } catch (err) {
       setSubmitError(err instanceof Error && err.message ? err.message : 'Unable to save items. Check your connection and try again.')
     } finally {
@@ -292,6 +314,7 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
               key={card.localId}
               index={idx}
               card={card}
+              itemTypes={itemTypes}
               canRemove={cards.length > 1 && !submitting}
               onSearchChange={q => handleSearchChange(card.localId, q)}
               onSelectItem={item => selectItem(card.localId, item)}
@@ -346,6 +369,7 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
 interface ItemCardEditorProps {
   index: number
   card: ItemCard
+  itemTypes: { label: string; value: string }[]
   canRemove: boolean
   onSearchChange: (query: string) => void
   onSelectItem: (item: SearchResult) => void
@@ -358,7 +382,7 @@ interface ItemCardEditorProps {
 }
 
 function ItemCardEditor({
-  index, card, canRemove,
+  index, card, itemTypes, canRemove,
   onSearchChange, onSelectItem, onSwitchToCreateNew, onSwitchToSearch,
   onChange, onRemove, onFiles, onRemovePhoto,
 }: ItemCardEditorProps) {
@@ -478,33 +502,46 @@ function ItemCardEditor({
 
           <div>
             <label className="field-label">Item Type</label>
-            <select
-              value={card.itemTypeOther ? 'OTHER' : card.itemType}
-              onChange={e => {
-                if (e.target.value === 'OTHER') {
-                  onChange({ itemTypeOther: true, itemType: '', errors: { ...card.errors, itemType: undefined } })
-                } else {
-                  onChange({ itemTypeOther: false, itemType: e.target.value, errors: { ...card.errors, itemType: undefined } })
-                }
-              }}
-              className={`field-input${card.errors.itemType ? ' error' : ''}`}
-              aria-invalid={!!card.errors.itemType}
-            >
-              <option value="">Select type…</option>
-              {ITEM_TYPES.map(t => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-            {card.itemTypeOther && (
-              <input
-                type="text"
+            {!card.itemTypeOther ? (
+              <select
                 value={card.itemType}
-                onChange={e => onChange({ itemType: e.target.value, errors: { ...card.errors, itemType: undefined } })}
-                placeholder="Describe the item type"
+                onChange={e => {
+                  if (e.target.value === '__other__') {
+                    onChange({ itemType: '', itemTypeOther: true, errors: { ...card.errors, itemType: undefined } })
+                  } else {
+                    onChange({ itemType: e.target.value, errors: { ...card.errors, itemType: undefined } })
+                  }
+                }}
                 className={`field-input${card.errors.itemType ? ' error' : ''}`}
                 aria-invalid={!!card.errors.itemType}
-                style={{ marginTop: 'var(--space-2)' }}
-              />
+              >
+                <option value="">Select type…</option>
+                {itemTypes.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+                <option value="__other__">Other…</option>
+              </select>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={card.itemType}
+                  onChange={e => onChange({ itemType: e.target.value, errors: { ...card.errors, itemType: undefined } })}
+                  placeholder="Enter item type…"
+                  className={`field-input${card.errors.itemType ? ' error' : ''}`}
+                  aria-invalid={!!card.errors.itemType}
+                  aria-label="Custom item type"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => onChange({ itemType: '', itemTypeOther: false, errors: { ...card.errors, itemType: undefined } })}
+                  style={{ fontSize: 'var(--text-xs)', marginTop: 'var(--space-2)' }}
+                >
+                  ← Choose from list instead
+                </button>
+              </>
             )}
             {card.errors.itemType && <p className="field-error" role="alert">{card.errors.itemType}</p>}
           </div>

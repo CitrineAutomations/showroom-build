@@ -1,10 +1,9 @@
 import { fetchTwenty } from '@/lib/twenty'
+import { getCurrentContactId } from '@/lib/session'
 import { GET_CLOSED_PULLS } from '@/lib/queries'
 import { formatMonthYear } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
 import { AlertTriangle } from 'lucide-react'
-
-const DEMO_CLIENT_ID = '573f15e1-339c-4cf8-826b-ab0417c1832e'
 
 interface ClosedPull {
   id: string
@@ -28,8 +27,10 @@ export default async function HistoryPage() {
   let error: string | null = null
 
   try {
+    const contactId = await getCurrentContactId()
+    if (!contactId) throw new Error('No client record found for this account')
     const data = await fetchTwenty<ClosedPullsResponse>(GET_CLOSED_PULLS, {
-      clientId: DEMO_CLIENT_ID,
+      clientId: contactId,
     })
     pulls = data.pulls.edges.map((e) => e.node)
   } catch (e) {

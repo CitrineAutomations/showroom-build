@@ -1,13 +1,11 @@
 import { fetchTwenty } from '@/lib/twenty'
+import { getCurrentContactId } from '@/lib/session'
 import { GET_ACTIVE_PULL } from '@/lib/queries'
 import { ReturnDateCard } from '@/components/portal/ReturnDateCard'
 import { ContractCard } from '@/components/portal/ContractCard'
 import { ItemCard } from '@/components/portal/ItemCard'
 import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
-
-// TODO: replace with session.contactId when Clerk auth is wired (Phase 4)
-const DEMO_CLIENT_ID = '573f15e1-339c-4cf8-826b-ab0417c1832e'
 
 interface PullNode {
   id: string
@@ -45,8 +43,10 @@ export default async function DashboardPage() {
   let error: string | null = null
 
   try {
+    const contactId = await getCurrentContactId()
+    if (!contactId) throw new Error('No client record found for this account')
     const data = await fetchTwenty<PullsResponse>(GET_ACTIVE_PULL, {
-      clientId: DEMO_CLIENT_ID,
+      clientId: contactId,
     })
     pull = data.pulls.edges[0]?.node ?? null
   } catch (e) {

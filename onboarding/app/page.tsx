@@ -11,7 +11,6 @@ import Step3DriversLicense from '@/components/steps/Step3DriversLicense'
 import Step4Payment from '@/components/steps/Step4Payment'
 import Step4bPullDetails from '@/components/steps/Step4bPullDetails'
 import Step4cItemEntry from '@/components/steps/Step4cItemEntry'
-import Step5Photos from '@/components/steps/Step5Photos'
 import SuccessScreen from '@/components/SuccessScreen'
 import ReturnFlow from '@/components/ReturnFlow'
 
@@ -27,16 +26,16 @@ export interface FormData {
   existingStripeCustomerId: string | null
   clientType: ClientType | null
   dlFileIds: string[]
+  existingLicensePhotoUrls: string[]
   stripeCustomerId: string | null
   cardKept: boolean
   pullId: string | null
   pullReturnDate: string | null
-  pullPhotos: { id: string; name: string; url: string }[]
   isResumedClient: boolean
   photoFileIds: string[]
 }
 
-const TOTAL_STEPS = 8
+const TOTAL_STEPS = 7
 
 const slideVariants = {
   enterForward:  { x: 24, opacity: 0 },
@@ -62,11 +61,11 @@ export default function OnboardingPage() {
     existingStripeCustomerId: null,
     clientType: null,
     dlFileIds: [],
+    existingLicensePhotoUrls: [],
     stripeCustomerId: null,
     cardKept: false,
     pullId: null,
     pullReturnDate: null,
-    pullPhotos: [],
     isResumedClient: false,
     photoFileIds: [],
   })
@@ -105,9 +104,10 @@ export default function OnboardingPage() {
     clientType: ClientType | null
     pullId: string | null
     pullReturnDate: string | null
-    pullPhotos: { id: string; name: string; url: string }[]
+    licensePhotoUrls: string[]
   }) {
-    updateForm({ ...data, isResumedClient: true })
+    const { licensePhotoUrls, ...rest } = data
+    updateForm({ ...rest, existingLicensePhotoUrls: licensePhotoUrls, isResumedClient: true })
     goNext()
   }
 
@@ -132,6 +132,17 @@ export default function OnboardingPage() {
     goNext()
   }
 
+  async function handleLicenseComplete(newFileIds: string[]) {
+    if (formData.contactId && newFileIds.length > 0) {
+      await fetch('/api/contact/license', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactId: formData.contactId, fileIds: newFileIds }),
+      })
+    }
+    goNext()
+  }
+
   function handlePullDetailsComplete(pullId: string) {
     updateForm({ pullId })
     goNext()
@@ -153,11 +164,11 @@ export default function OnboardingPage() {
       existingStripeCustomerId: null,
       clientType: null,
       dlFileIds: [],
+      existingLicensePhotoUrls: [],
       stripeCustomerId: null,
       cardKept: false,
       pullId: null,
       pullReturnDate: null,
-      pullPhotos: [],
       isResumedClient: false,
       photoFileIds: [],
     })
@@ -219,6 +230,7 @@ export default function OnboardingPage() {
             <Step1Identity
               initialData={{ firstName: formData.firstName, lastName: formData.lastName, email: formData.email, phone: formData.phone }}
               onComplete={handleStep1Complete}
+              onBack={goBack}
             />
           )}
           {step === 3 && (
@@ -231,10 +243,10 @@ export default function OnboardingPage() {
           )}
           {step === 4 && (
             <Step3DriversLicense
-              fileIds={formData.dlFileIds}
-              isResumedClient={formData.isResumedClient}
-              onFileIds={ids => updateForm({ dlFileIds: ids })}
-              onNext={goNext}
+              existingPhotoUrls={formData.existingLicensePhotoUrls}
+              newFileIds={formData.dlFileIds}
+              onNewFileIds={ids => updateForm({ dlFileIds: ids })}
+              onNext={handleLicenseComplete}
               onBack={goBack}
             />
           )}
@@ -259,16 +271,6 @@ export default function OnboardingPage() {
           {step === 7 && (
             <Step4cItemEntry
               pullId={formData.pullId}
-              onComplete={goNext}
-              onBack={goBack}
-            />
-          )}
-          {step === 8 && (
-            <Step5Photos
-              contactId={formData.contactId}
-              pullId={formData.pullId}
-              isResumedClient={formData.isResumedClient}
-              existingPhotos={formData.pullPhotos}
               onComplete={handleComplete}
               onBack={goBack}
             />
