@@ -12,7 +12,7 @@ interface ClosedPull {
   coverageEvent: string | null
   coveragePlatform: string | null
   creditGiven: boolean | null
-  items: { totalCount: number }
+  pullItemLoans: { totalCount: number }
 }
 
 interface ClosedPullsResponse {
@@ -71,7 +71,7 @@ export default async function HistoryPage() {
         <div key={pull.id} className="card" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
-              {formatMonthYear(pull.createdAt)} · {pull.items.totalCount} item{pull.items.totalCount === 1 ? '' : 's'}
+              {formatMonthYear(pull.createdAt)} · {pull.pullItemLoans.totalCount} item{pull.pullItemLoans.totalCount === 1 ? '' : 's'}
             </span>
             {pull.creditGiven && (
               <Badge variant="signed">Credited</Badge>

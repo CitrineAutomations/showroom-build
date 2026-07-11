@@ -6,6 +6,7 @@ const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 const UPLOAD_TARGETS: Record<string, { objectName: string; fieldName: string }> = {
   itemImages: { objectName: 'inventoryItem', fieldName: 'itemImages' },
   pullItemLoanPhotos: { objectName: 'pullItemLoan', fieldName: 'photos' },
+  driversLicense: { objectName: 'person', fieldName: 'driversLicense' },
 }
 
 export async function POST(req: NextRequest) {

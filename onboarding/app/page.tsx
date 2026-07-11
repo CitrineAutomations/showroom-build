@@ -25,8 +25,8 @@ export interface FormData {
   hasCardOnFile: boolean
   existingStripeCustomerId: string | null
   clientType: ClientType | null
-  dlFileIds: string[]
-  existingLicensePhotoUrls: string[]
+  dlFileIds: (string | null)[]
+  existingLicensePhotos: { fileId: string; url: string }[]
   stripeCustomerId: string | null
   cardKept: boolean
   pullId: string | null
@@ -50,6 +50,7 @@ export default function OnboardingPage() {
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
   const [showSuccess, setShowSuccess] = useState(false)
   const [showConflict, setShowConflict] = useState(false)
+  const [cardConflictResolved, setCardConflictResolved] = useState(false)
   const [showReturn, setShowReturn] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
@@ -61,7 +62,7 @@ export default function OnboardingPage() {
     existingStripeCustomerId: null,
     clientType: null,
     dlFileIds: [],
-    existingLicensePhotoUrls: [],
+    existingLicensePhotos: [],
     stripeCustomerId: null,
     cardKept: false,
     pullId: null,
@@ -104,26 +105,28 @@ export default function OnboardingPage() {
     clientType: ClientType | null
     pullId: string | null
     pullReturnDate: string | null
-    licensePhotoUrls: string[]
+    licensePhotos: { fileId: string; url: string }[]
   }) {
-    const { licensePhotoUrls, ...rest } = data
-    updateForm({ ...rest, existingLicensePhotoUrls: licensePhotoUrls, isResumedClient: true })
+    const { licensePhotos, ...rest } = data
+    updateForm({ ...rest, existingLicensePhotos: licensePhotos, isResumedClient: true })
     goNext()
   }
 
   function handleStep4Entry() {
-    if (formData.hasCardOnFile) {
+    if (formData.hasCardOnFile && !cardConflictResolved) {
       setShowConflict(true)
     }
   }
 
   function handleConflictKeep() {
     updateForm({ cardKept: true, stripeCustomerId: formData.existingStripeCustomerId })
+    setCardConflictResolved(true)
     setShowConflict(false)
     goNext()
   }
 
   function handleConflictReplace() {
+    setCardConflictResolved(true)
     setShowConflict(false)
   }
 
@@ -132,12 +135,14 @@ export default function OnboardingPage() {
     goNext()
   }
 
-  async function handleLicenseComplete(newFileIds: string[]) {
-    if (formData.contactId && newFileIds.length > 0) {
+  async function handleLicenseComplete(newFileIds: (string | null)[]) {
+    const existingFileIds = formData.existingLicensePhotos.map(p => p.fileId)
+    const fileIds = newFileIds.map((id, i) => id ?? existingFileIds[i]).filter(Boolean) as string[]
+    if (formData.contactId && fileIds.length > 0) {
       await fetch('/api/contact/license', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contactId: formData.contactId, fileIds: newFileIds }),
+        body: JSON.stringify({ contactId: formData.contactId, fileIds }),
       })
     }
     goNext()
@@ -164,7 +169,7 @@ export default function OnboardingPage() {
       existingStripeCustomerId: null,
       clientType: null,
       dlFileIds: [],
-      existingLicensePhotoUrls: [],
+      existingLicensePhotos: [],
       stripeCustomerId: null,
       cardKept: false,
       pullId: null,
@@ -175,6 +180,7 @@ export default function OnboardingPage() {
     setStep(1)
     setShowSuccess(false)
     setShowConflict(false)
+    setCardConflictResolved(false)
   }
 
   if (showSuccess) {
@@ -244,7 +250,7 @@ export default function OnboardingPage() {
           )}
           {step === 4 && (
             <Step3DriversLicense
-              existingPhotoUrls={formData.existingLicensePhotoUrls}
+              existingPhotoUrls={formData.existingLicensePhotos.map(p => p.url)}
               newFileIds={formData.dlFileIds}
               onNewFileIds={ids => updateForm({ dlFileIds: ids })}
               onNext={handleLicenseComplete}

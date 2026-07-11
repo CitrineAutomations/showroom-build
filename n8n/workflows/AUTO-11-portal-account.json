@@ -40,7 +40,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.clerk.com/v1/users",
+        "url": "https://api.clerk.com/v1/invitations",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -50,11 +50,11 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"email_address\": [\"{{ $json.body.email }}\"],\n  \"first_name\": \"{{ $json.body.firstName }}\",\n  \"last_name\": \"{{ $json.body.lastName }}\",\n  \"public_metadata\": { \"twentyContactId\": \"{{ $json.body.contactId }}\" },\n  \"skip_password_requirement\": true\n}",
+        "jsonBody": "={\n  \"email_address\": \"{{ $json.body.email }}\",\n  \"public_metadata\": { \"twentyContactId\": \"{{ $json.body.contactId }}\", \"firstName\": \"{{ $json.body.firstName }}\", \"lastName\": \"{{ $json.body.lastName }}\" },\n  \"redirect_url\": \"{{ $env.PORTAL_URL }}/portal\",\n  \"notify\": true,\n  \"ignore_existing\": true\n}",
         "options": {}
       },
       "id": "77777777-7777-4777-8777-777777777703",
-      "name": "Create Clerk User",
+      "name": "Create Clerk Invitation",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [480, 200]
@@ -62,7 +62,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={ \"success\": true, \"clerkUserId\": \"{{ $json.id }}\" }",
+        "responseBody": "={ \"success\": true, \"invitationId\": \"{{ $json.id }}\" }",
         "options": { "responseCode": 200 }
       },
       "id": "77777777-7777-4777-8777-777777777704",

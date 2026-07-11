@@ -222,6 +222,9 @@ export interface OpenPullSummary {
   }
 }
 
+// VISITED (client still browsing, nothing checked out yet) is intentionally excluded here —
+// this feeds the return flow, and only OUT/DUE_SOON/OVERDUE pulls have items that can be returned.
+// getActivePullForContact (onboarding resume) still includes VISITED on purpose.
 export async function listOpenPulls(): Promise<OpenPullSummary[]> {
   const data = await gql<{ pulls: { edges: { node: {
     id: string
@@ -246,7 +249,7 @@ export async function listOpenPulls(): Promise<OpenPullSummary[]> {
         }
       }
     }
-  `, { filter: { stage: { in: ['VISITED', 'OUT', 'DUE_SOON', 'OVERDUE'] } } })
+  `, { filter: { stage: { in: ['OUT', 'DUE_SOON', 'OVERDUE'] } } })
   const summaries: (OpenPullSummary | null)[] = data.pulls.edges.map(e => {
     if (!e.node.clientId) return null
     return { id: e.node.id, returnDate: e.node.returnDate, stage: e.node.stage, client: e.node.clientId }
@@ -260,7 +263,10 @@ interface PullItemLoanNode {
   inventoryItem: { id: string; itemId: string; designer: string; itemType: string; color: string }
 }
 
-export async function getOpenPullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string; items: PullItem[] } | null> {
+// VISITED excluded — see note on listOpenPulls above; this is the return-flow item lookup.
+// Looked up by pull id (not clientId) — a client can have more than one open pull, and the
+// staff member selects a specific pull row in the list, so we must load that exact pull.
+export async function getOpenPull(pullId: string): Promise<{ id: string; returnDate: string; stage: string; items: PullItem[] } | null> {
   const data = await gql<{ pulls: { edges: { node: {
     id: string
     returnDate: string
@@ -281,7 +287,7 @@ export async function getOpenPullForContact(contactId: string): Promise<{ id: st
         }
       }
     }
-  `, { filter: { clientId: { id: { eq: contactId } }, stage: { in: ['VISITED', 'OUT', 'DUE_SOON', 'OVERDUE'] } } })
+  `, { filter: { id: { eq: pullId }, stage: { in: ['OUT', 'DUE_SOON', 'OVERDUE'] } } })
   const node = data.pulls.edges[0]?.node
   if (!node) return null
   return {
@@ -304,14 +310,35 @@ export type ItemCondition = 'AVAILABLE' | 'DAMAGED' | 'LOST'
 
 export async function returnPullItems(
   pullId: string,
-  items: { loanId: string; inventoryItemId: string; condition: ItemCondition; conditionNotes?: string }[],
+  items: { loanId: string; inventoryItemId: string; condition: ItemCondition; conditionNotes?: string; loanFileIds?: string[] }[],
 ): Promise<{ stage: string }> {
-  for (const { loanId, inventoryItemId, condition, conditionNotes } of items) {
+  for (const { loanId, inventoryItemId, condition, conditionNotes, loanFileIds } of items) {
+    let photos: { fileId: string; label: string }[] | undefined
+    if (loanFileIds?.length) {
+      const existing = await gql<{ pullItemLoan: { photos: { fileId: string }[] | null } | null }>(`
+        query LoanPhotos($id: ID!) {
+          pullItemLoan(filter: { id: { eq: $id } }) { photos { fileId } }
+        }
+      `, { id: loanId })
+      const existingPhotos = existing.pullItemLoan?.photos ?? []
+      photos = [
+        ...existingPhotos.map(p => ({ fileId: p.fileId, label: 'Photo' })),
+        ...loanFileIds.map(fileId => ({ fileId, label: 'Damage Photo' })),
+      ]
+    }
+
     await gql(`
       mutation UpdatePullItemLoan($id: ID!, $input: PullItemLoanUpdateInput!) {
         updatePullItemLoan(id: $id, data: $input) { id outcome }
       }
-    `, { id: loanId, input: { outcome: condition, ...(conditionNotes ? { conditionNotes } : {}) } })
+    `, {
+      id: loanId,
+      input: {
+        outcome: condition,
+        ...(conditionNotes ? { conditionNotes } : {}),
+        ...(photos ? { photos } : {}),
+      },
+    })
 
     await gql(`
       mutation UpdateInventoryItem($id: ID!, $input: InventoryItemUpdateInput!) {
@@ -566,6 +593,7 @@ export async function createInventoryItem(
     }
   `, {
     input: {
+      name: itemId,
       itemId,
       designer,
       color,
@@ -812,31 +840,33 @@ export async function attachFilesToContact(contactId: string, fileIds: string[],
   }
 }
 
-const LICENSE_ATTACHMENT_PREFIX = 'license'
-
 export interface LicensePhoto {
-  attachmentId: string
+  fileId: string
   url: string
 }
 
 export async function getLicensePhotosForContact(contactId: string): Promise<LicensePhoto[]> {
-  const data = await gql<{ person: { attachments: { edges: { node: {
-    id: string
-    name: string
-    createdAt: string
-    file: { url: string }[]
-  } }[] } } | null }>(`
-    query LicensePhotos($id: ID!) {
+  const data = await gql<{ person: { driversLicense: { fileId: string; url: string }[] | null } | null }>(`
+    query DriversLicense($id: ID!) {
       person(filter: { id: { eq: $id } }) {
-        attachments {
-          edges { node { id name createdAt file } }
-        }
+        driversLicense { fileId url }
       }
     }
   `, { id: contactId })
-  const attachments = data.person?.attachments.edges.map(e => e.node) ?? []
-  return attachments
-    .filter(a => a.name.startsWith(`${LICENSE_ATTACHMENT_PREFIX}-`) && a.file[0]?.url)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .map(a => ({ attachmentId: a.id, url: a.file[0].url }))
+  return data.person?.driversLicense ?? []
+}
+
+// Order matters: index 0 is front, index 1 is back (matches Step3DriversLicense upload order).
+export async function updatePersonDriversLicense(contactId: string, fileIds: string[]): Promise<void> {
+  if (!fileIds.length) return
+  await gql(`
+    mutation UpdateDriversLicense($id: ID!, $input: PersonUpdateInput!) {
+      updatePerson(id: $id, data: $input) { id }
+    }
+  `, {
+    id: contactId,
+    input: {
+      driversLicense: fileIds.map(fileId => ({ fileId, label: 'License' })),
+    },
+  })
 }

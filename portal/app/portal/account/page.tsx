@@ -8,7 +8,7 @@ interface AccountPullResponse {
   pulls: {
     edges: Array<{
       node: {
-        client: {
+        clientId: {
           name: { firstName: string; lastName: string }
           emails: { primaryEmail: string }
           phones?: { primaryPhoneNumber?: string }
@@ -19,7 +19,7 @@ interface AccountPullResponse {
 }
 
 export default async function AccountPage() {
-  let client: AccountPullResponse['pulls']['edges'][0]['node']['client'] | null = null
+  let client: AccountPullResponse['pulls']['edges'][0]['node']['clientId'] | null = null
 
   let error: string | null = null
   try {
@@ -28,7 +28,7 @@ export default async function AccountPage() {
     const data = await fetchTwenty<AccountPullResponse>(GET_ACTIVE_PULL, {
       clientId: contactId,
     })
-    client = data.pulls.edges[0]?.node?.client ?? null
+    client = data.pulls.edges[0]?.node?.clientId ?? null
   } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to load account'
   }

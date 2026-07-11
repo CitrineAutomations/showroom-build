@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Search, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
+import { Search, AlertCircle, Loader2, CheckCircle2, Camera, X } from 'lucide-react'
 import type { ItemCondition } from '@/lib/twenty'
 
 interface OpenPullListEntry {
@@ -33,6 +33,13 @@ interface OpenPull {
   items: PullItem[]
 }
 
+interface DamagePhoto {
+  localId: string
+  preview: string
+  loanFileId: string | null
+  state: 'uploading' | 'done' | 'error'
+}
+
 const CONDITION_LABELS: Record<ItemCondition, string> = {
   AVAILABLE: 'Good',
   DAMAGED: 'Damaged',
@@ -55,9 +62,17 @@ export default function ReturnFlow({ onDone }: Props) {
   const [pull, setPull] = useState<OpenPull | null>(null)
   const [clientName, setClientName] = useState('')
   const [conditions, setItemConditions] = useState<Record<string, ItemCondition | null>>({})
+  const [damageNotes, setDamageNotes] = useState<Record<string, string>>({})
+  const [damagePhotos, setDamagePhotos] = useState<Record<string, DamagePhoto[]>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [finalStage, setFinalStage] = useState<string | null>(null)
+
+  let photoIdCounter = 0
+  function nextPhotoId() {
+    photoIdCounter += 1
+    return `photo-${Date.now()}-${photoIdCounter}`
+  }
 
   async function loadOpenPulls() {
     setLoadingList(true)
@@ -98,7 +113,7 @@ export default function ReturnFlow({ onDone }: Props) {
     setLoadingPull(true)
     setSearchError(null)
     try {
-      const res = await fetch(`/api/return?contactId=${encodeURIComponent(entry.client.id)}`)
+      const res = await fetch(`/api/return?pullId=${encodeURIComponent(entry.id)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Pull lookup failed')
       if (!data.pull) {
@@ -140,10 +155,69 @@ export default function ReturnFlow({ onDone }: Props) {
     setItemConditions(prev => ({ ...prev, [id]: condition }))
   }
 
+  async function uploadFileOnce(file: File): Promise<string | null> {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('target', 'pullItemLoanPhotos')
+    const res = await fetch('/api/upload', { method: 'POST', body: form })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.fileId as string
+  }
+
+  async function uploadFile(file: File, attempts = 3): Promise<string | null> {
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      const fileId = await uploadFileOnce(file)
+      if (fileId) return fileId
+      if (attempt < attempts) await new Promise(resolve => setTimeout(resolve, 400 * attempt))
+    }
+    return null
+  }
+
+  async function handleDamageFiles(loanId: string, files: FileList) {
+    const batch = Array.from(files).map(file => ({
+      file,
+      item: {
+        localId: nextPhotoId(),
+        preview: URL.createObjectURL(file),
+        loanFileId: null,
+        state: 'uploading' as const,
+      },
+    }))
+    if (batch.length === 0) return
+
+    setDamagePhotos(prev => ({ ...prev, [loanId]: [...(prev[loanId] ?? []), ...batch.map(b => b.item)] }))
+
+    await Promise.all(batch.map(async ({ item, file }) => {
+      const loanFileId = await uploadFile(file)
+      setDamagePhotos(prev => ({
+        ...prev,
+        [loanId]: (prev[loanId] ?? []).map(p =>
+          p.localId === item.localId ? { ...p, loanFileId, state: loanFileId ? 'done' as const : 'error' as const } : p
+        ),
+      }))
+    }))
+  }
+
+  function removeDamagePhoto(loanId: string, photoLocalId: string) {
+    setDamagePhotos(prev => ({ ...prev, [loanId]: (prev[loanId] ?? []).filter(p => p.localId !== photoLocalId) }))
+  }
+
   const returningCount = Object.values(conditions).filter(Boolean).length
 
+  function damageIncomplete(): boolean {
+    return Object.entries(conditions).some(([loanId, condition]) => {
+      if (condition !== 'DAMAGED') return false
+      const hasNotes = !!damageNotes[loanId]?.trim()
+      const photos = damagePhotos[loanId] ?? []
+      const hasDonePhoto = photos.some(p => p.state === 'done')
+      const allSettled = photos.every(p => p.state !== 'uploading')
+      return !hasNotes || !hasDonePhoto || !allSettled
+    })
+  }
+
   async function submitReturn() {
-    if (!pull || returningCount === 0) return
+    if (!pull || returningCount === 0 || damageIncomplete()) return
     setSubmitting(true)
     setSubmitError(null)
     try {
@@ -151,7 +225,11 @@ export default function ReturnFlow({ onDone }: Props) {
         .filter((entry): entry is [string, ItemCondition] => !!entry[1])
         .map(([loanId, condition]) => {
           const item = pull.items.find(i => i.loanId === loanId)
-          return { loanId, inventoryItemId: item?.inventoryItemId ?? '', condition }
+          const conditionNotes = condition === 'DAMAGED' ? damageNotes[loanId]?.trim() || undefined : undefined
+          const loanFileIds = condition === 'DAMAGED'
+            ? (damagePhotos[loanId] ?? []).filter(p => p.state === 'done' && p.loanFileId).map(p => p.loanFileId!)
+            : undefined
+          return { loanId, inventoryItemId: item?.inventoryItemId ?? '', condition, conditionNotes, loanFileIds }
         })
       const res = await fetch('/api/return', {
         method: 'POST',
@@ -180,6 +258,8 @@ export default function ReturnFlow({ onDone }: Props) {
     setPull(null)
     setClientName('')
     setItemConditions({})
+    setDamageNotes({})
+    setDamagePhotos({})
     setSubmitError(null)
     setFinalStage(null)
     loadOpenPulls()
@@ -259,6 +339,72 @@ export default function ReturnFlow({ onDone }: Props) {
                       ))}
                     </div>
                   )}
+
+                  {checked && condition === 'DAMAGED' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                      <div>
+                        <label className="field-label">Damage Notes</label>
+                        <textarea
+                          value={damageNotes[item.loanId] ?? ''}
+                          onChange={e => setDamageNotes(prev => ({ ...prev, [item.loanId]: e.target.value }))}
+                          className="field-input"
+                          rows={2}
+                          aria-label={`Damage notes for ${item.designer} ${item.itemType}`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="field-label">Photo</label>
+                        {(damagePhotos[item.loanId] ?? []).length === 0 ? (
+                          <label
+                            htmlFor={`damage-photo-${item.loanId}`}
+                            className="upload-zone"
+                            aria-label={`Add damage photo for ${item.designer} ${item.itemType}`}
+                          >
+                            <Camera size={24} color="var(--color-text-secondary)" aria-hidden="true" />
+                            <span className="section-label">Tap to Add Photo</span>
+                            <input
+                              id={`damage-photo-${item.loanId}`}
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              multiple
+                              className="file-input-hidden"
+                              onChange={e => { if (e.target.files?.length) handleDamageFiles(item.loanId, e.target.files); e.target.value = '' }}
+                            />
+                          </label>
+                        ) : (
+                          <div className="photo-grid">
+                            {(damagePhotos[item.loanId] ?? []).map((photo, pIdx) => (
+                              <div key={photo.localId} className="photo-thumb-wrap">
+                                <img src={photo.preview} alt={`Damage photo ${pIdx + 1}`} />
+                                {photo.state === 'uploading' && (
+                                  <div className="photo-uploading-overlay">
+                                    <Loader2 size={20} className="spin" color="var(--color-text-primary)" aria-hidden="true" />
+                                  </div>
+                                )}
+                                {photo.state === 'error' && (
+                                  <div className="photo-uploading-overlay" style={{ background: 'rgba(192,57,43,0.6)' }}>
+                                    <AlertCircle size={20} color="white" aria-hidden="true" />
+                                  </div>
+                                )}
+                                <button
+                                  className="photo-remove-btn"
+                                  onClick={() => removeDamagePhoto(item.loanId, photo.localId)}
+                                  aria-label={`Remove photo ${pIdx + 1}`}
+                                >
+                                  <X size={14} aria-hidden="true" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {(damagePhotos[item.loanId] ?? []).some(p => p.state === 'error') && (
+                          <p className="field-error" role="alert">One or more photos failed to upload — remove and retry.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
@@ -277,7 +423,7 @@ export default function ReturnFlow({ onDone }: Props) {
           <button
             className="btn btn-primary"
             onClick={submitReturn}
-            disabled={submitting || returningCount === 0}
+            disabled={submitting || returningCount === 0 || damageIncomplete()}
           >
             {submitting ? <Loader2 size={16} className="spin" aria-hidden="true" /> : null}
             {submitting ? 'Saving…' : 'Confirm Return'}

@@ -2,7 +2,7 @@ export const GET_ACTIVE_PULL = `
   query GetActivePull($clientId: ID!) {
     pulls(
       filter: {
-        client: { id: { eq: $clientId } }
+        clientId: { id: { eq: $clientId } }
         stage: { in: [OUT, DUE_SOON, OVERDUE] }
       }
       first: 1
@@ -15,24 +15,29 @@ export const GET_ACTIVE_PULL = `
           returnDate
           contractSent
           contractSigned
-          client {
+          clientId {
             id
             name { firstName lastName }
             emails { primaryEmail }
             phones { primaryPhoneNumber }
           }
-          items {
+          pullItemLoans {
             edges {
               node {
                 id
-                itemId
-                designer
-                color
-                season
-                photo {
+                outcome
+                conditionNotes
+                photos {
                   fileId
                   label
                   extension
+                }
+                inventoryItem {
+                  id
+                  itemId
+                  designer
+                  color
+                  season
                 }
               }
             }
@@ -47,7 +52,7 @@ export const GET_CLOSED_PULLS = `
   query GetClosedPulls($clientId: ID!, $after: String) {
     pulls(
       filter: {
-        client: { id: { eq: $clientId } }
+        clientId: { id: { eq: $clientId } }
         stage: { eq: CLOSED }
       }
       first: 10
@@ -62,7 +67,7 @@ export const GET_CLOSED_PULLS = `
           coverageEvent
           coveragePlatform
           creditGiven
-          items { totalCount }
+          pullItemLoans { totalCount }
         }
       }
       pageInfo { hasNextPage endCursor }
