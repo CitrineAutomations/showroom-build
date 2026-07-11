@@ -113,7 +113,7 @@ export default function ReturnFlow({ onDone }: Props) {
     setLoadingPull(true)
     setSearchError(null)
     try {
-      const res = await fetch(`/api/return?contactId=${encodeURIComponent(entry.client.id)}`)
+      const res = await fetch(`/api/return?pullId=${encodeURIComponent(entry.id)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Pull lookup failed')
       if (!data.pull) {

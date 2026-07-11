@@ -264,7 +264,9 @@ interface PullItemLoanNode {
 }
 
 // VISITED excluded — see note on listOpenPulls above; this is the return-flow item lookup.
-export async function getOpenPullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string; items: PullItem[] } | null> {
+// Looked up by pull id (not clientId) — a client can have more than one open pull, and the
+// staff member selects a specific pull row in the list, so we must load that exact pull.
+export async function getOpenPull(pullId: string): Promise<{ id: string; returnDate: string; stage: string; items: PullItem[] } | null> {
   const data = await gql<{ pulls: { edges: { node: {
     id: string
     returnDate: string
@@ -285,7 +287,7 @@ export async function getOpenPullForContact(contactId: string): Promise<{ id: st
         }
       }
     }
-  `, { filter: { clientId: { id: { eq: contactId } }, stage: { in: ['OUT', 'DUE_SOON', 'OVERDUE'] } } })
+  `, { filter: { id: { eq: pullId }, stage: { in: ['OUT', 'DUE_SOON', 'OVERDUE'] } } })
   const node = data.pulls.edges[0]?.node
   if (!node) return null
   return {

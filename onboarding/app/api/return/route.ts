@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getOpenPullForContact, returnPullItems, type ItemCondition } from '@/lib/twenty'
+import { getOpenPull, returnPullItems, type ItemCondition } from '@/lib/twenty'
 
 const VALID_CONDITIONS: ItemCondition[] = ['AVAILABLE', 'DAMAGED', 'LOST']
 
 export async function GET(req: NextRequest) {
   try {
-    const contactId = req.nextUrl.searchParams.get('contactId')
-    if (!contactId) {
-      return NextResponse.json({ error: 'contactId is required' }, { status: 400 })
+    const pullId = req.nextUrl.searchParams.get('pullId')
+    if (!pullId) {
+      return NextResponse.json({ error: 'pullId is required' }, { status: 400 })
     }
-    const pull = await getOpenPullForContact(contactId)
+    const pull = await getOpenPull(pullId)
     return NextResponse.json({ pull })
   } catch (err) {
     console.error('[api/return]', err)
