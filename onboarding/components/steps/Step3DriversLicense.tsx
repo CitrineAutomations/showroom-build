@@ -4,15 +4,14 @@ import { useRef, useState, useId } from 'react'
 import { Camera, CheckCircle2, AlertCircle, Loader2, X } from 'lucide-react'
 
 interface Props {
-  existingPhotoUrls: string[]
-  newFileIds: string[]
-  onNewFileIds: (ids: string[]) => void
-  onNext: (newFileIds: string[]) => void
+  fileIds: string[]
+  onFileIds: (ids: string[]) => void
+  onNext: () => void
   onBack: () => void
 }
 
 type Side = 'front' | 'back'
-type UploadState = 'existing' | 'idle' | 'uploading' | 'done' | 'error'
+type UploadState = 'idle' | 'uploading' | 'done' | 'error'
 
 interface SideState {
   uploadState: UploadState
@@ -23,20 +22,20 @@ interface SideState {
 
 const INITIAL_SIDE: SideState = { uploadState: 'idle', preview: null, fileId: null, error: null }
 
-export default function Step3DriversLicense({ existingPhotoUrls, newFileIds, onNewFileIds, onNext, onBack }: Props) {
+export default function Step3DriversLicense({ fileIds, onFileIds, onNext, onBack }: Props) {
   const frontStateRef = useRef<SideState>(INITIAL_SIDE)
   const backStateRef = useRef<SideState>(INITIAL_SIDE)
 
   const [front, setFront] = useState<SideState>(() => {
-    const initial = existingPhotoUrls[0]
-      ? { uploadState: 'existing' as const, preview: existingPhotoUrls[0], fileId: null, error: null }
+    const initial = fileIds[0]
+      ? { uploadState: 'done' as const, preview: null, fileId: fileIds[0], error: null }
       : INITIAL_SIDE
     frontStateRef.current = initial
     return initial
   })
   const [back, setBack] = useState<SideState>(() => {
-    const initial = existingPhotoUrls[1]
-      ? { uploadState: 'existing' as const, preview: existingPhotoUrls[1], fileId: null, error: null }
+    const initial = fileIds[1]
+      ? { uploadState: 'done' as const, preview: null, fileId: fileIds[1], error: null }
       : INITIAL_SIDE
     backStateRef.current = initial
     return initial
@@ -80,7 +79,7 @@ export default function Step3DriversLicense({ existingPhotoUrls, newFileIds, onN
 
       const newFrontId = side === 'front' ? data.fileId : frontStateRef.current.fileId
       const newBackId = side === 'back' ? data.fileId : backStateRef.current.fileId
-      onNewFileIds([newFrontId, newBackId].filter(Boolean) as string[])
+      onFileIds([newFrontId, newBackId].filter(Boolean) as string[])
     } catch {
       patchSide(side, {
         uploadState: 'error',
@@ -97,13 +96,11 @@ export default function Step3DriversLicense({ existingPhotoUrls, newFileIds, onN
 
     const newFrontId = side === 'front' ? null : frontStateRef.current.fileId
     const newBackId = side === 'back' ? null : backStateRef.current.fileId
-    onNewFileIds([newFrontId, newBackId].filter(Boolean) as string[])
+    onFileIds([newFrontId, newBackId].filter(Boolean) as string[])
     setLiveMsg('')
   }
 
-  const canProceed =
-    (front.uploadState === 'done' || front.uploadState === 'existing') &&
-    (back.uploadState === 'done' || back.uploadState === 'existing')
+  const canProceed = front.uploadState === 'done' && back.uploadState === 'done'
 
   return (
     <>
@@ -115,12 +112,6 @@ export default function Step3DriversLicense({ existingPhotoUrls, newFileIds, onN
         </p>
 
         <span aria-live="polite" className="sr-only">{liveMsg}</span>
-
-        {(front.uploadState === 'existing' || back.uploadState === 'existing') && (
-          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)', lineHeight: 1.6 }}>
-            Driver's license already on file — retake if it's changed.
-          </p>
-        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
           <SideSlot
@@ -146,7 +137,7 @@ export default function Step3DriversLicense({ existingPhotoUrls, newFileIds, onN
         <button className="btn btn-ghost" onClick={onBack}>← Back</button>
         <button
           className="btn btn-primary"
-          onClick={() => onNext(newFileIds)}
+          onClick={onNext}
           disabled={!canProceed}
           aria-disabled={!canProceed}
         >
@@ -211,8 +202,7 @@ function SideSlot({ label, state, onFile, onRetake }: SlotProps) {
     )
   }
 
-  // existing (already on file) or done (freshly uploaded)
-  const isExisting = state.uploadState === 'existing'
+  // done
   return (
     <div>
       <p className="field-label" style={{ marginBottom: 'var(--space-2)' }}>{label}</p>
@@ -248,7 +238,7 @@ function SideSlot({ label, state, onFile, onRetake }: SlotProps) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'var(--space-2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-success)', fontSize: 'var(--text-sm)' }}>
           <CheckCircle2 size={14} aria-hidden="true" />
-          <span>{isExisting ? 'On file' : 'Saved'}</span>
+          <span>Saved</span>
         </div>
         <button className="btn btn-ghost" onClick={onRetake} style={{ padding: '4px 10px', fontSize: 'var(--text-xs)' }}>
           <X size={12} aria-hidden="true" /> Retake

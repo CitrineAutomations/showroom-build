@@ -269,7 +269,6 @@ body {
   font-size: var(--text-base);
   font-family: var(--font-sans);
   min-height: 48px;
-  color-scheme: dark;
   transition: border-color var(--duration-micro) var(--ease-out);
 }
 

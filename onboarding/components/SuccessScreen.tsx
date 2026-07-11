@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { CheckCircle2, Check, AlertCircle } from 'lucide-react'
+import { CheckCircle2, Check } from 'lucide-react'
 import type { FormData } from '@/app/page'
 
 interface Props {
@@ -17,45 +17,18 @@ const CLIENT_TYPE_LABELS: Record<string, string> = {
 
 export default function SuccessScreen({ formData, onReset }: Props) {
   const resetBtnRef = useRef<HTMLButtonElement>(null)
-  const [portalAccountFailed, setPortalAccountFailed] = useState(false)
 
   useEffect(() => {
     resetBtnRef.current?.focus()
   }, [])
 
-  useEffect(() => {
-    if (!formData.contactId) return
-    fetch('/api/portal-account', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contactId: formData.contactId,
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-      }),
-    })
-      .then(res => { if (!res.ok) setPortalAccountFailed(true) })
-      .catch(() => setPortalAccountFailed(true))
-  }, [formData.contactId, formData.email, formData.firstName, formData.lastName])
-
-  useEffect(() => {
-    if (!formData.pullId) return
-    fetch('/api/pull/mark-out', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pullId: formData.pullId }),
-    }).catch(() => {})
-  }, [formData.pullId])
-
   const photoCount = formData.photoFileIds.length
   const clientTypeLabel = formData.clientType ? CLIENT_TYPE_LABELS[formData.clientType] : null
-  const dlPhotoCount = Math.max(formData.dlFileIds.length, formData.existingLicensePhotoUrls.length)
 
   const rows: { label: string; show: boolean; muted?: boolean }[] = [
     { label: 'Contact in CRM', show: true },
     { label: 'Client type set', show: !!formData.clientType },
-    { label: `ID photos saved (${dlPhotoCount}/2)`, show: dlPhotoCount > 0 },
+    { label: `ID photos saved (${formData.dlFileIds.length}/2)`, show: formData.dlFileIds.length > 0 },
     {
       label: formData.cardKept ? 'Existing card on file kept' : 'Card on file',
       show: !!(formData.stripeCustomerId),
@@ -121,23 +94,6 @@ export default function SuccessScreen({ formData, onReset }: Props) {
           </div>
         ))}
       </div>
-
-      {portalAccountFailed && (
-        <p
-          role="status"
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 'var(--space-2)',
-            fontSize: 'var(--text-sm)',
-            color: 'var(--color-text-secondary)',
-            marginTop: 'var(--space-4)',
-          }}
-        >
-          <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
-          <span>Portal access will be set up shortly. No action needed.</span>
-        </p>
-      )}
 
       <button
         ref={resetBtnRef}

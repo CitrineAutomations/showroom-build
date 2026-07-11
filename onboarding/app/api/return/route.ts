@@ -25,13 +25,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'pullId and items are required' }, { status: 400 })
     }
     const invalid = items.some(
-      (item: { loanId?: unknown; inventoryItemId?: unknown; condition?: unknown }) =>
-        typeof item.loanId !== 'string' ||
-        typeof item.inventoryItemId !== 'string' ||
-        !VALID_CONDITIONS.includes(item.condition as ItemCondition)
+      (item: { id?: unknown; condition?: unknown }) =>
+        typeof item.id !== 'string' || !VALID_CONDITIONS.includes(item.condition as ItemCondition)
     )
     if (invalid) {
-      return NextResponse.json({ error: 'Each item requires a loanId, inventoryItemId, and a valid condition' }, { status: 400 })
+      return NextResponse.json({ error: 'Each item requires an id and a valid condition' }, { status: 400 })
     }
     const result = await returnPullItems(pullId, items)
     return NextResponse.json(result)

@@ -1,8 +1,9 @@
 import { fetchTwenty } from '@/lib/twenty'
-import { getCurrentContactId } from '@/lib/session'
 import { GET_ACTIVE_PULL } from '@/lib/queries'
-import { Mail, Phone, LogOut, AlertTriangle } from 'lucide-react'
-import { SignOutButton } from '@clerk/nextjs'
+import { Mail, Phone, LogOut } from 'lucide-react'
+import Link from 'next/link'
+
+const DEMO_CLIENT_ID = '573f15e1-339c-4cf8-826b-ab0417c1832e'
 
 interface AccountPullResponse {
   pulls: {
@@ -21,16 +22,13 @@ interface AccountPullResponse {
 export default async function AccountPage() {
   let client: AccountPullResponse['pulls']['edges'][0]['node']['client'] | null = null
 
-  let error: string | null = null
   try {
-    const contactId = await getCurrentContactId()
-    if (!contactId) throw new Error('No client record found for this account')
     const data = await fetchTwenty<AccountPullResponse>(GET_ACTIVE_PULL, {
-      clientId: contactId,
+      clientId: DEMO_CLIENT_ID,
     })
     client = data.pulls.edges[0]?.node?.client ?? null
-  } catch (e) {
-    error = e instanceof Error ? e.message : 'Failed to load account'
+  } catch {
+    // silently fall through to empty state
   }
 
   const fullName = client
@@ -53,13 +51,6 @@ export default async function AccountPage() {
           {fullName}
         </h1>
       </div>
-
-      {error && (
-        <div className="alert alert-danger">
-          <AlertTriangle size={16} />
-          <span>{error}</span>
-        </div>
-      )}
 
       {/* Contact details */}
       {client && (
@@ -106,16 +97,15 @@ export default async function AccountPage() {
 
       <hr className="divider" />
 
-      {/* Sign out */}
-      <SignOutButton redirectUrl="/login">
-        <button
-          className="btn btn-ghost"
-          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', justifyContent: 'center', width: '100%' }}
-        >
-          <LogOut size={16} />
-          Sign Out
-        </button>
-      </SignOutButton>
+      {/* Sign out (demo) */}
+      <Link
+        href="/login"
+        className="btn btn-ghost"
+        style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', justifyContent: 'center' }}
+      >
+        <LogOut size={16} />
+        Sign Out
+      </Link>
     </div>
   )
 }

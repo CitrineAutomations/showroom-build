@@ -33,19 +33,3 @@ export async function fetchTwenty<T>(
 }
 
 export { TWENTY_API_URL, TWENTY_API_KEY }
-
-const FIND_CONTACT_BY_EMAIL = `
-  query FindByEmail($email: String!) {
-    people(filter: { emails: { primaryEmail: { eq: $email } } }) {
-      edges { node { id } }
-    }
-  }
-`
-
-export async function findContactIdByEmail(email: string): Promise<string | null> {
-  const data = await fetchTwenty<{ people: { edges: { node: { id: string } }[] } }>(
-    FIND_CONTACT_BY_EMAIL,
-    { email },
-  )
-  return data.people.edges[0]?.node.id ?? null
-}
