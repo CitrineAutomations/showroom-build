@@ -306,6 +306,9 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
         const prefix = savedCount > 0 ? `${savedCount} item${savedCount > 1 ? 's' : ''} already saved — retry the rest. ` : ''
         throw new Error(`${prefix}${data.error || 'Failed to save items'}`)
       }
+      if (Array.isArray(data.warnings) && data.warnings.length > 0) {
+        window.alert(`Items were saved, but some inventory statuses need manual attention:\n\n${data.warnings.join('\n')}`)
+      }
       const photoFileIds = items.flatMap(item => item.itemFileIds)
       onComplete(photoFileIds)
     } catch (err) {
