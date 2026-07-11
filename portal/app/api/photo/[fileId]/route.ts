@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { TWENTY_API_URL, TWENTY_API_KEY } from '@/lib/twenty'
 
-// Get a fresh signed URL by querying inventoryItems for this fileId
+// Get a fresh signed URL by querying pullItemLoans for this fileId
 async function getFreshSignedUrl(fileId: string): Promise<string | null> {
   const res = await fetch(`${TWENTY_API_URL}/graphql`, {
     method: 'POST',
@@ -11,10 +11,10 @@ async function getFreshSignedUrl(fileId: string): Promise<string | null> {
     },
     body: JSON.stringify({
       query: `{
-        inventoryItems(first: 100) {
+        pullItemLoans(first: 100) {
           edges {
             node {
-              photo { fileId url }
+              photos { fileId url }
             }
           }
         }
@@ -26,10 +26,10 @@ async function getFreshSignedUrl(fileId: string): Promise<string | null> {
   if (!res.ok) return null
 
   const json = await res.json()
-  const edges = json?.data?.inventoryItems?.edges ?? []
+  const edges = json?.data?.pullItemLoans?.edges ?? []
 
   for (const { node } of edges) {
-    for (const photo of node.photo ?? []) {
+    for (const photo of node.photos ?? []) {
       if (photo.fileId === fileId) return photo.url as string
     }
   }
