@@ -12,7 +12,8 @@ interface Props {
 interface PhotoItem {
   localId: string
   preview: string
-  fileId: string | null
+  loanFileId: string | null
+  itemFileId: string | null
   state: 'uploading' | 'done' | 'error'
 }
 
@@ -163,10 +164,10 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
     patchCard(localId, { mode: 'existing', selectedItem: null, designer: '', color: '', itemType: '', itemTypeOther: false, errors: {} })
   }
 
-  async function uploadFile(file: File): Promise<string | null> {
+  async function uploadFile(file: File, target: string): Promise<string | null> {
     const form = new FormData()
     form.append('file', file)
-    form.append('target', 'pullItemLoanPhotos')
+    form.append('target', target)
     const res = await fetch('/api/upload', { method: 'POST', body: form })
     if (!res.ok) return null
     const data = await res.json()
@@ -182,7 +183,8 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
       item: {
         localId: nextId(),
         preview: URL.createObjectURL(file),
-        fileId: null,
+        loanFileId: null,
+        itemFileId: null,
         state: 'uploading' as const,
       },
     }))
@@ -191,12 +193,16 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
     patchCard(cardLocalId, { photos: [...card.photos, ...batch.map(b => b.item)] })
 
     await Promise.all(batch.map(async ({ item, file }) => {
-      const fileId = await uploadFile(file)
+      const [loanFileId, itemFileId] = await Promise.all([
+        uploadFile(file, 'pullItemLoanPhotos'),
+        uploadFile(file, 'itemImages'),
+      ])
       const current = cardsRef.current.find(c => c.localId === cardLocalId)
       if (!current) return
+      const succeeded = !!loanFileId && !!itemFileId
       patchCard(cardLocalId, {
         photos: current.photos.map(p =>
-          p.localId === item.localId ? { ...p, fileId, state: fileId ? 'done' as const : 'error' as const } : p
+          p.localId === item.localId ? { ...p, loanFileId, itemFileId, state: succeeded ? 'done' as const : 'error' as const } : p
         ),
       })
     }))
@@ -246,13 +252,16 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
     try {
       const submittedCards = cardsRef.current
       const items = submittedCards.map(card => {
-        const fileIds = card.photos.filter(p => p.state === 'done' && p.fileId).map(p => p.fileId!)
+        const donePhotos = card.photos.filter(p => p.state === 'done' && p.loanFileId && p.itemFileId)
+        const loanFileIds = donePhotos.map(p => p.loanFileId!)
+        const itemFileIds = donePhotos.map(p => p.itemFileId!)
         if (card.mode === 'existing' && card.selectedItem) {
           return {
             mode: 'existing' as const,
             inventoryItemId: card.selectedItem.id,
             conditionNotes: card.conditionNotes.trim() || undefined,
-            fileIds,
+            loanFileIds,
+            itemFileIds,
           }
         }
         return {
@@ -261,7 +270,8 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
           color: card.color.trim(),
           itemType: card.itemType.trim(),
           conditionNotes: card.conditionNotes.trim() || undefined,
-          fileIds,
+          loanFileIds,
+          itemFileIds,
         }
       })
       const res = await fetch('/api/pull-items', {
@@ -275,15 +285,15 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
         if (savedCount > 0) {
           // Drop the cards that already succeeded (matched against the snapshot
           // that was actually submitted, not any later edits) so retry doesn't
-          // resubmit their fileIds — Twenty rejects re-linking a file already
-          // attached to the loan created for that card.
+          // resubmit their loanFileIds/itemFileIds — Twenty rejects re-linking a
+          // file already attached to the loan or inventory item created for that card.
           const succeededIds = new Set(submittedCards.slice(0, savedCount).map(c => c.localId))
           updateCards(cardsRef.current.filter(c => !succeededIds.has(c.localId)))
         }
         const prefix = savedCount > 0 ? `${savedCount} item${savedCount > 1 ? 's' : ''} already saved — retry the rest. ` : ''
         throw new Error(`${prefix}${data.error || 'Failed to save items'}`)
       }
-      const photoFileIds = items.flatMap(item => item.fileIds)
+      const photoFileIds = items.flatMap(item => item.itemFileIds)
       onComplete(photoFileIds)
     } catch (err) {
       setSubmitError(err instanceof Error && err.message ? err.message : 'Unable to save items. Check your connection and try again.')

@@ -9,14 +9,16 @@ interface NewItemInput {
   color: string
   itemType: string
   conditionNotes?: string
-  fileIds: string[]
+  loanFileIds: string[]
+  itemFileIds: string[]
 }
 
 interface ExistingItemInput {
   mode: 'existing'
   inventoryItemId: string
   conditionNotes?: string
-  fileIds: string[]
+  loanFileIds: string[]
+  itemFileIds: string[]
 }
 
 type ItemInput = NewItemInput | ExistingItemInput
@@ -55,14 +57,15 @@ export async function POST(req: NextRequest) {
     const createdLoanIds: string[] = []
     for (let i = 0; i < items.length; i++) {
       const item = items[i] as ItemInput
-      const fileIds = Array.isArray(item.fileIds) ? item.fileIds : []
+      const loanFileIds = Array.isArray(item.loanFileIds) ? item.loanFileIds : []
+      const itemFileIds = Array.isArray(item.itemFileIds) ? item.itemFileIds : []
       const label = item.mode === 'new' ? item.designer : `existing item ${item.inventoryItemId.slice(0, 8)}`
       let createdNewInventoryItemId: string | null = null
       try {
         let inventoryItemId: string
         let itemIdentifier: string
         if (item.mode === 'new') {
-          const created = await createInventoryItem(item.designer, item.color, item.itemType, i + 1, fileIds)
+          const created = await createInventoryItem(item.designer, item.color, item.itemType, i + 1, itemFileIds)
           inventoryItemId = created.id
           itemIdentifier = created.itemId
           createdNewInventoryItemId = created.id
@@ -73,9 +76,9 @@ export async function POST(req: NextRequest) {
             throw new Error(`Item is no longer available (status: ${status ?? 'unknown'})`)
           }
           itemIdentifier = await getInventoryItemIdentifier(inventoryItemId)
-          await addInventoryItemImagesIfMissing(inventoryItemId, fileIds)
+          await addInventoryItemImagesIfMissing(inventoryItemId, itemFileIds)
         }
-        const loan = await createPullItemLoan(pullId, inventoryItemId, itemIdentifier, item.conditionNotes, fileIds)
+        const loan = await createPullItemLoan(pullId, inventoryItemId, itemIdentifier, item.conditionNotes, loanFileIds)
         createdLoanIds.push(loan.id)
       } catch (err) {
         // If we created a new InventoryItem for this card but the loan write failed,
