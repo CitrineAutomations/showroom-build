@@ -50,7 +50,10 @@ export default function SuccessScreen({ formData, onReset }: Props) {
 
   const photoCount = formData.photoFileIds.length
   const clientTypeLabel = formData.clientType ? CLIENT_TYPE_LABELS[formData.clientType] : null
-  const dlPhotoCount = Math.max(formData.dlFileIds.length, formData.existingLicensePhotoUrls.length)
+  const dlPhotoCount = Math.max(
+    formData.dlFileIds.filter(Boolean).length,
+    formData.existingLicensePhotos.length
+  )
 
   const rows: { label: string; show: boolean; muted?: boolean }[] = [
     { label: 'Contact in CRM', show: true },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { attachFilesToContact, getLicensePhotosForContact } from '@/lib/twenty'
+import { updatePersonDriversLicense, getLicensePhotosForContact } from '@/lib/twenty'
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     if (!contactId || !Array.isArray(fileIds) || fileIds.length === 0) {
       return NextResponse.json({ error: 'contactId and at least one fileId are required' }, { status: 400 })
     }
-    await attachFilesToContact(contactId, fileIds, 'license')
+    await updatePersonDriversLicense(contactId, fileIds)
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[api/contact/license]', err)

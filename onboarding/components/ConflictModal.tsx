@@ -10,10 +10,10 @@ interface Props {
 }
 
 export default function ConflictModal({ clientName, onKeep, onReplace }: Props) {
-  const keepRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    keepRef.current?.focus()
+    panelRef.current?.focus()
   }, [])
 
   const firstName = clientName.split(' ')[0] || clientName
@@ -27,7 +27,9 @@ export default function ConflictModal({ clientName, onKeep, onReplace }: Props) 
       aria-describedby="conflict-desc"
     >
       <motion.div
+        ref={panelRef}
         className="modal-panel"
+        tabIndex={-1}
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
@@ -62,7 +64,7 @@ export default function ConflictModal({ clientName, onKeep, onReplace }: Props) 
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          <button ref={keepRef} className="btn btn-ghost" style={{ width: '100%' }} onClick={onKeep}>
+          <button className="btn btn-ghost" style={{ width: '100%' }} onClick={onKeep}>
             Keep Existing Card
           </button>
           <button className="btn btn-primary" style={{ width: '100%', flex: 'none' }} onClick={onReplace}>

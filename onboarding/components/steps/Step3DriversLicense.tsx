@@ -5,9 +5,9 @@ import { Camera, CheckCircle2, AlertCircle, Loader2, X } from 'lucide-react'
 
 interface Props {
   existingPhotoUrls: string[]
-  newFileIds: string[]
-  onNewFileIds: (ids: string[]) => void
-  onNext: (newFileIds: string[]) => void
+  newFileIds: (string | null)[]
+  onNewFileIds: (ids: (string | null)[]) => void
+  onNext: (newFileIds: (string | null)[]) => void
   onBack: () => void
 }
 
@@ -64,6 +64,7 @@ export default function Step3DriversLicense({ existingPhotoUrls, newFileIds, onN
 
     const form = new FormData()
     form.append('file', file)
+    form.append('target', 'driversLicense')
     try {
       const res = await fetch('/api/upload', { method: 'POST', body: form })
       const data = await res.json()
@@ -80,7 +81,7 @@ export default function Step3DriversLicense({ existingPhotoUrls, newFileIds, onN
 
       const newFrontId = side === 'front' ? data.fileId : frontStateRef.current.fileId
       const newBackId = side === 'back' ? data.fileId : backStateRef.current.fileId
-      onNewFileIds([newFrontId, newBackId].filter(Boolean) as string[])
+      onNewFileIds([newFrontId, newBackId])
     } catch {
       patchSide(side, {
         uploadState: 'error',
@@ -97,7 +98,7 @@ export default function Step3DriversLicense({ existingPhotoUrls, newFileIds, onN
 
     const newFrontId = side === 'front' ? null : frontStateRef.current.fileId
     const newBackId = side === 'back' ? null : backStateRef.current.fileId
-    onNewFileIds([newFrontId, newBackId].filter(Boolean) as string[])
+    onNewFileIds([newFrontId, newBackId])
     setLiveMsg('')
   }
 

@@ -591,6 +591,7 @@ export async function createInventoryItem(
     }
   `, {
     input: {
+      name: itemId,
       itemId,
       designer,
       color,
@@ -837,31 +838,33 @@ export async function attachFilesToContact(contactId: string, fileIds: string[],
   }
 }
 
-const LICENSE_ATTACHMENT_PREFIX = 'license'
-
 export interface LicensePhoto {
-  attachmentId: string
+  fileId: string
   url: string
 }
 
 export async function getLicensePhotosForContact(contactId: string): Promise<LicensePhoto[]> {
-  const data = await gql<{ person: { attachments: { edges: { node: {
-    id: string
-    name: string
-    createdAt: string
-    file: { url: string }[]
-  } }[] } } | null }>(`
-    query LicensePhotos($id: ID!) {
+  const data = await gql<{ person: { driversLicense: { fileId: string; url: string }[] | null } | null }>(`
+    query DriversLicense($id: ID!) {
       person(filter: { id: { eq: $id } }) {
-        attachments {
-          edges { node { id name createdAt file } }
-        }
+        driversLicense { fileId url }
       }
     }
   `, { id: contactId })
-  const attachments = data.person?.attachments.edges.map(e => e.node) ?? []
-  return attachments
-    .filter(a => a.name.startsWith(`${LICENSE_ATTACHMENT_PREFIX}-`) && a.file[0]?.url)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .map(a => ({ attachmentId: a.id, url: a.file[0].url }))
+  return data.person?.driversLicense ?? []
+}
+
+// Order matters: index 0 is front, index 1 is back (matches Step3DriversLicense upload order).
+export async function updatePersonDriversLicense(contactId: string, fileIds: string[]): Promise<void> {
+  if (!fileIds.length) return
+  await gql(`
+    mutation UpdateDriversLicense($id: ID!, $input: PersonUpdateInput!) {
+      updatePerson(id: $id, data: $input) { id }
+    }
+  `, {
+    id: contactId,
+    input: {
+      driversLicense: fileIds.map(fileId => ({ fileId, label: 'License' })),
+    },
+  })
 }
