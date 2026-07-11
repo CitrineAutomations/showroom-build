@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier } from '@/lib/twenty'
+import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier, getInventoryItemStatus } from '@/lib/twenty'
 
 const MAX_ITEMS = 20
 
@@ -68,6 +68,10 @@ export async function POST(req: NextRequest) {
           createdNewInventoryItemId = created.id
         } else {
           inventoryItemId = item.inventoryItemId
+          const status = await getInventoryItemStatus(inventoryItemId)
+          if (status !== 'AVAILABLE') {
+            throw new Error(`Item is no longer available (status: ${status ?? 'unknown'})`)
+          }
           itemIdentifier = await getInventoryItemIdentifier(inventoryItemId)
           await addInventoryItemImagesIfMissing(inventoryItemId, fileIds)
         }
@@ -76,17 +80,21 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         // If we created a new InventoryItem for this card but the loan write failed,
         // remove it so a retry doesn't leave an orphaned OUT item and create a duplicate.
+        let cleanupFailed = false
         if (createdNewInventoryItemId) {
           try {
             await deleteInventoryItem(createdNewInventoryItemId)
           } catch {
-            // best-effort cleanup; surface the original error below regardless
+            cleanupFailed = true
           }
         }
         const message = err instanceof Error ? err.message : 'Failed to create item'
         const stage = item.mode === 'new' ? 'creating new item' : 'linking existing item'
+        const cleanupNote = cleanupFailed
+          ? ` (also failed to remove the partially-created inventory item ${createdNewInventoryItemId} — remove it manually before retrying to avoid a duplicate)`
+          : ''
         return NextResponse.json(
-          { error: `Item ${i + 1} (${label}), ${stage}: ${message}`, createdLoanIds },
+          { error: `Item ${i + 1} (${label}), ${stage}: ${message}${cleanupNote}`, createdLoanIds },
           { status: 500 },
         )
       }

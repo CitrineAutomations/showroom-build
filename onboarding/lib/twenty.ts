@@ -618,6 +618,15 @@ export async function addInventoryItemImagesIfMissing(
   })
 }
 
+export async function getInventoryItemStatus(inventoryItemId: string): Promise<string | null> {
+  const data = await gql<{ inventoryItem: { status: string } | null }>(`
+    query InventoryItemStatus($id: ID!) {
+      inventoryItem(filter: { id: { eq: $id } }) { status }
+    }
+  `, { id: inventoryItemId })
+  return data.inventoryItem?.status ?? null
+}
+
 export async function getInventoryItemIdentifier(inventoryItemId: string): Promise<string> {
   const data = await gql<{ inventoryItem: { itemId: string } | null }>(`
     query InventoryItemIdentifier($id: ID!) {
