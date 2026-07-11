@@ -36,6 +36,7 @@ interface ItemCard {
   designer: string
   color: string
   itemType: string
+  itemTypeOther: boolean
   conditionNotes: string
   photos: PhotoItem[]
   errors: { designer?: string; color?: string; itemType?: string }
@@ -71,6 +72,7 @@ function emptyCard(): ItemCard {
     designer: '',
     color: '',
     itemType: '',
+    itemTypeOther: false,
     conditionNotes: '',
     photos: [],
     errors: {},
@@ -158,7 +160,7 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
   }
 
   function switchToSearch(localId: string) {
-    patchCard(localId, { mode: 'existing', selectedItem: null, designer: '', color: '', itemType: '', errors: {} })
+    patchCard(localId, { mode: 'existing', selectedItem: null, designer: '', color: '', itemType: '', itemTypeOther: false, errors: {} })
   }
 
   async function uploadFile(file: File): Promise<string | null> {
