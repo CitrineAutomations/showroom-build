@@ -97,7 +97,13 @@ export async function POST(req: NextRequest) {
           }
         } else if (markedOutExistingItemId) {
           try {
-            await markInventoryItemAvailable(markedOutExistingItemId)
+            // Only revert to AVAILABLE if it's still OUT from this attempt — if another
+            // pull or a manual update already changed it, leave that state alone rather
+            // than clobbering it.
+            const currentStatus = await getInventoryItemStatus(markedOutExistingItemId)
+            if (currentStatus === 'OUT') {
+              await markInventoryItemAvailable(markedOutExistingItemId)
+            }
           } catch {
             cleanupFailed = true
           }
