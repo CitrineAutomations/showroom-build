@@ -222,6 +222,9 @@ export interface OpenPullSummary {
   }
 }
 
+// VISITED (client still browsing, nothing checked out yet) is intentionally excluded here —
+// this feeds the return flow, and only OUT/DUE_SOON/OVERDUE pulls have items that can be returned.
+// getActivePullForContact (onboarding resume) still includes VISITED on purpose.
 export async function listOpenPulls(): Promise<OpenPullSummary[]> {
   const data = await gql<{ pulls: { edges: { node: {
     id: string
@@ -246,7 +249,7 @@ export async function listOpenPulls(): Promise<OpenPullSummary[]> {
         }
       }
     }
-  `, { filter: { stage: { in: ['VISITED', 'OUT', 'DUE_SOON', 'OVERDUE'] } } })
+  `, { filter: { stage: { in: ['OUT', 'DUE_SOON', 'OVERDUE'] } } })
   const summaries: (OpenPullSummary | null)[] = data.pulls.edges.map(e => {
     if (!e.node.clientId) return null
     return { id: e.node.id, returnDate: e.node.returnDate, stage: e.node.stage, client: e.node.clientId }
@@ -260,6 +263,7 @@ interface PullItemLoanNode {
   inventoryItem: { id: string; itemId: string; designer: string; itemType: string; color: string }
 }
 
+// VISITED excluded — see note on listOpenPulls above; this is the return-flow item lookup.
 export async function getOpenPullForContact(contactId: string): Promise<{ id: string; returnDate: string; stage: string; items: PullItem[] } | null> {
   const data = await gql<{ pulls: { edges: { node: {
     id: string
@@ -281,7 +285,7 @@ export async function getOpenPullForContact(contactId: string): Promise<{ id: st
         }
       }
     }
-  `, { filter: { clientId: { id: { eq: contactId } }, stage: { in: ['VISITED', 'OUT', 'DUE_SOON', 'OVERDUE'] } } })
+  `, { filter: { clientId: { id: { eq: contactId } }, stage: { in: ['OUT', 'DUE_SOON', 'OVERDUE'] } } })
   const node = data.pulls.edges[0]?.node
   if (!node) return null
   return {
