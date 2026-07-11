@@ -14,21 +14,26 @@ interface PullNode {
   returnDate: string
   contractSent: boolean | null
   contractSigned: boolean | null
-  client: {
+  clientId: {
     id: string
     name: { firstName: string; lastName: string }
     emails: { primaryEmail: string }
     phones?: { primaryPhoneNumber?: string }
   }
-  items: {
+  pullItemLoans: {
     edges: Array<{
       node: {
         id: string
-        itemId: string
-        designer: string
-        color: string | null
-        season: string | null
-        photo: Array<{ fileId: string; label: string; extension: string }>
+        outcome: string | null
+        conditionNotes: string | null
+        inventoryItem: {
+          id: string
+          itemId: string
+          designer: string
+          color: string | null
+          season: string | null
+          itemImages: Array<{ fileId: string; label: string; extension: string }>
+        }
       }
     }>
   }
@@ -80,8 +85,11 @@ export default async function DashboardPage() {
     )
   }
 
-  const items = pull.items.edges.map((e) => e.node)
-  const clientName = `${pull.client.name.firstName} ${pull.client.name.lastName}`
+  const items = pull.pullItemLoans.edges.map((e) => ({
+    ...e.node.inventoryItem,
+    photo: e.node.inventoryItem.itemImages,
+  }))
+  const clientName = `${pull.clientId.name.firstName} ${pull.clientId.name.lastName}`
   const isOverdue = pull.stage === 'OVERDUE'
 
   return (
