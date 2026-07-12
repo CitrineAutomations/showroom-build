@@ -48,11 +48,8 @@ Copy [`.env.example`](./.env.example) values into n8n **Settings → Variables**
 | `GOOGLE_SHEETS_INVENTORY_ID` | AUTO-09 |
 | `OWNER_EMAIL` | AUTO-06 escalation, AUTO-12 fallback notification |
 | `CLERK_SECRET_KEY` | AUTO-11 |
-| `DOCUSIGN_API_KEY` | AUTO-12 |
-| `DOCUSIGN_ACCOUNT_ID` | AUTO-12 |
-| `DOCUSIGN_BASE_URL` | AUTO-12 (account-specific DocuSign REST base URL, e.g. `https://na1.docusign.net`) |
-| `DOCUSIGN_WEBHOOK_SECRET` | AUTO-12 (DocuSign Connect HMAC key) |
-| `DOCUSIGN_PULL_SIGNED_CONTRACT_FIELD_ID` | AUTO-12 (Pull.signedContract field metadata ID, for multipart file upload) |
+
+> AUTO-12's DocuSign credentials (Client ID, User ID, Account ID, base URL, RSA private key, webhook secret, Twenty field metadata ID) are **not** set here — this n8n plan has no Settings → Variables access. They're hardcoded directly in the AUTO-12 workflow's "DocuSign Config" Set node and "Compute Expected Signature" code node instead. See that workflow's sticky note for the full list. Treat a filled-in export of that workflow as a secret.
 
 ### 2. Import workflows
 
@@ -87,9 +84,16 @@ DocuSign Connect webhooks are configured in DocuSign, not Twenty. In DocuSign Ad
 
 - Event: **Envelope Completed**
 - URL: AUTO-12's Production Webhook URL
-- Enable HMAC signing with a secret matching `DOCUSIGN_WEBHOOK_SECRET`
+- Enable HMAC signing with a secret — paste the same value into AUTO-12's "Compute Expected Signature" code node (`DOCUSIGN_WEBHOOK_SECRET` constant) and "DocuSign Config" Set node
 
-Run `infra/twenty/create-docusign-fields.py` first to create `Pull.signedContract` and `Person.contracts`, then look up `Pull.signedContract`'s field metadata ID via Twenty's `/metadata` API and set `DOCUSIGN_PULL_SIGNED_CONTRACT_FIELD_ID`.
+Auth uses JWT Grant, not a static API key:
+
+1. In DocuSign → Settings → Apps and Keys, create an Integration Key (Client ID), generate an RSA keypair, and register a redirect URI (any value works, e.g. `https://developers.docusign.com/platform/auth/consent`) — required before consent will work.
+2. Grant one-time consent: visit `https://account-d.docusign.com/oauth/auth?response_type=code&scope=signature%20impersonation&client_id=<Client ID>&redirect_uri=<your redirect URI>` logged in as the account to impersonate, and click Allow. (Swap `account-d` for `account` in production.)
+3. Find your User ID (My Account Information) and Account ID (same page or Apps and Keys).
+4. Fill in AUTO-12's "DocuSign Config" Set node with the Client ID, User ID, Account ID, base URL (`https://demo.docusign.net` for sandbox, `https://na1.docusign.net`-style for production), and the RSA private key (PEM block, `BEGIN`/`END` lines included).
+
+Run `infra/twenty/create-docusign-fields.py` first to create `Pull.signedContract` and `Person.contracts`, then look up `Pull.signedContract`'s field metadata ID via Twenty's `/metadata` API and paste it into "DocuSign Config"'s `twentyPullSignedContractFieldId` value.
 
 ### 5. Wire onboarding → AUTO-11
 

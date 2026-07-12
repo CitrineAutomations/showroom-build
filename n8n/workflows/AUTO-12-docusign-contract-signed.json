@@ -6,35 +6,50 @@
         "httpMethod": "POST",
         "path": "docusign-envelope-completed",
         "responseMode": "responseNode",
-        "options": { "rawBody": true }
+        "options": {
+          "rawBody": true
+        }
       },
       "id": "88888888-8888-4888-8888-888888888801",
       "name": "DocuSign Connect Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 400],
+      "position": [
+        0,
+        400
+      ],
       "webhookId": "88888888-8888-4888-8888-888888888801"
     },
     {
       "parameters": {
-        "jsCode": "// DocuSign Connect HMAC verification (HMAC-SHA256, base64), per DocuSign Connect docs:\n// https://developers.docusign.com/platform/webhooks/connect/#hmac-message-signature-verification\n// Requires the webhook trigger's 'rawBody' option enabled so the exact bytes DocuSign signed are available.\nconst crypto = require('crypto')\n\nconst item = $input.first().json\nconst rawBody = item.rawBody\nconst signatureHeader = item.headers['x-docusign-signature-1']\nconst secret = $env.DOCUSIGN_WEBHOOK_SECRET\n\nconst valid = !!rawBody && !!signatureHeader && (() => {\n  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('base64')\n  const a = Buffer.from(expected)\n  const b = Buffer.from(signatureHeader)\n  return a.length === b.length && crypto.timingSafeEqual(a, b)\n})()\n\nreturn [{ json: { ...item, signatureValid: valid } }]"
+        "jsCode": "// DocuSign Connect HMAC verification (HMAC-SHA256, base64), per DocuSign Connect docs:\n// https://developers.docusign.com/platform/webhooks/connect/#hmac-message-signature-verification\n// Requires the webhook trigger's 'rawBody' option enabled so the exact bytes DocuSign signed are available.\n// No $env access available \u00e2\u20ac\u201d secret is hardcoded here. Treat this workflow export as a secret.\nconst crypto = require('crypto')\n\nconst DOCUSIGN_WEBHOOK_SECRET = 'PASTE_DOCUSIGN_WEBHOOK_SECRET_HERE'\n\nconst item = $input.first().json\nconst rawBody = item.rawBody\nconst signatureHeader = item.headers['x-docusign-signature-1']\n\nconst valid = !!rawBody && !!signatureHeader && (() => {\n  const expected = crypto.createHmac('sha256', DOCUSIGN_WEBHOOK_SECRET).update(rawBody).digest('base64')\n  const a = Buffer.from(expected)\n  const b = Buffer.from(signatureHeader)\n  return a.length === b.length && crypto.timingSafeEqual(a, b)\n})()\n\nreturn [{ json: { ...item, signatureValid: valid } }]"
       },
       "id": "88888888-8888-4888-8888-888888888802",
       "name": "Compute Expected Signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [240, 400]
+      "position": [
+        240,
+        400
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "sig-valid",
               "leftValue": "={{ $json.signatureValid }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -45,49 +60,194 @@
       "name": "Verify Signature",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [480, 400]
+      "position": [
+        480,
+        400
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={ \"error\": \"Unauthorized\" }",
-        "options": { "responseCode": 401 }
+        "options": {
+          "responseCode": 401
+        }
       },
       "id": "88888888-8888-4888-8888-888888888804",
       "name": "Unauthorized Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [480, 620]
+      "position": [
+        480,
+        620
+      ]
     },
     {
       "parameters": {
         "respondWith": "json",
         "responseBody": "={ \"success\": true }",
-        "options": { "responseCode": 200 }
+        "options": {
+          "responseCode": 200
+        }
       },
       "id": "88888888-8888-4888-8888-888888888805",
       "name": "Ack Response",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [720, 260]
+      "position": [
+        720,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfg-client-id",
+              "name": "docusignClientId",
+              "type": "string",
+              "value": "PASTE_DOCUSIGN_CLIENT_ID_HERE"
+            },
+            {
+              "id": "cfg-user-id",
+              "name": "docusignUserId",
+              "type": "string",
+              "value": "PASTE_DOCUSIGN_USER_ID_HERE"
+            },
+            {
+              "id": "cfg-account-id",
+              "name": "docusignAccountId",
+              "type": "string",
+              "value": "PASTE_DOCUSIGN_ACCOUNT_ID_HERE"
+            },
+            {
+              "id": "cfg-base-url",
+              "name": "docusignBaseUrl",
+              "type": "string",
+              "value": "https://demo.docusign.net"
+            },
+            {
+              "id": "cfg-auth-server",
+              "name": "docusignAuthServer",
+              "type": "string",
+              "value": "account-d.docusign.com"
+            },
+            {
+              "id": "cfg-private-key",
+              "name": "docusignPrivateKey",
+              "type": "string",
+              "value": "PASTE_RSA_PRIVATE_KEY_PEM_HERE"
+            },
+            {
+              "id": "cfg-webhook-secret",
+              "name": "docusignWebhookSecret",
+              "type": "string",
+              "value": "PASTE_DOCUSIGN_WEBHOOK_SECRET_HERE"
+            },
+            {
+              "id": "cfg-twenty-field-id",
+              "name": "twentyPullSignedContractFieldId",
+              "type": "string",
+              "value": "PASTE_PULL_SIGNEDCONTRACT_FIELD_METADATA_ID_HERE"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8888888a-8888-4888-8888-888888888816",
+      "name": "DocuSign Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        20
+      ],
+      "notesInFlow": true,
+      "notes": "Hardcoded credentials \u00e2\u20ac\u201d no $env access available. Fill in every PASTE_* value before activating. Treat this workflow export as a secret."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mint a DocuSign JWT Grant access token. One-time setup already done: RSA keypair generated\n// in DocuSign, consent granted via account-d.docusign.com/oauth/auth?...&scope=signature%20impersonation.\n// This runs fresh on every execution \u00e2\u20ac\u201d tokens are short-lived (~1hr) and not cached across runs.\nconst crypto = require('crypto')\n\nconst cfg = $input.first().json\nconst now = Math.floor(Date.now() / 1000)\nconst header = { alg: 'RS256', typ: 'JWT' }\nconst payload = {\n  iss: cfg.docusignClientId,\n  sub: cfg.docusignUserId,\n  aud: cfg.docusignAuthServer,\n  iat: now,\n  exp: now + 3600,\n  scope: 'signature impersonation',\n}\n\nconst base64url = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '')\nconst unsigned = `${base64url(header)}.${base64url(payload)}`\nconst signature = crypto.sign('RSA-SHA256', Buffer.from(unsigned), cfg.docusignPrivateKey).toString('base64').replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '')\nconst jwt = `${unsigned}.${signature}`\n\nreturn [{ json: { ...cfg, jwtAssertion: jwt } }]"
+      },
+      "id": "8888888a-8888-4888-8888-888888888817",
+      "name": "Mint DocuSign JWT",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://{{ $json.docusignAuthServer }}/oauth/token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "urn:ietf:params:oauth:grant-type:jwt-bearer"
+            },
+            {
+              "name": "assertion",
+              "value": "={{ $json.jwtAssertion }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8888888a-8888-4888-8888-888888888818",
+      "name": "Exchange JWT for Access Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        20
+      ],
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.DOCUSIGN_BASE_URL }}/restapi/v2.1/accounts/{{ $env.DOCUSIGN_ACCOUNT_ID }}/envelopes/{{ $json.body.data.envelopeId }}/documents/combined",
+        "url": "={{ $('DocuSign Config').item.json.docusignBaseUrl }}/restapi/v2.1/accounts/{{ $('DocuSign Config').item.json.docusignAccountId }}/envelopes/{{ $('DocuSign Connect Webhook').item.json.body.data.envelopeId }}/documents/combined",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.DOCUSIGN_API_KEY }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
           ]
         },
-        "options": { "response": { "response": { "responseFormat": "file", "neverError": false } } }
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "neverError": false
+            }
+          }
+        }
       },
       "id": "88888888-8888-4888-8888-888888888806",
       "name": "Fetch Combined PDF",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [960, 260],
+      "position": [
+        1440,
+        260
+      ],
       "onError": "continueErrorOutput"
     },
     {
@@ -97,8 +257,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.TWENTY_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -110,19 +276,29 @@
       "name": "Find Open Pulls By Signer Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1200, 260],
+      "position": [
+        1680,
+        260
+      ],
       "onError": "continueErrorOutput"
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
           "conditions": [
             {
               "id": "single-match",
               "leftValue": "={{ $json.data.pulls.edges.length }}",
               "rightValue": 1,
-              "operator": { "type": "number", "operation": "equals" }
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -133,7 +309,10 @@
       "name": "Exactly One Open Pull?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1440, 260]
+      "position": [
+        1920,
+        260
+      ]
     },
     {
       "parameters": {
@@ -142,7 +321,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.TWENTY_API_KEY }}"
+            }
           ]
         },
         "sendBody": true,
@@ -152,7 +334,7 @@
             {
               "parameterType": "formData",
               "name": "operations",
-              "value": "={\"query\":\"mutation UploadContractFile($file: Upload!, $fieldMetadataId: String!) { uploadFilesFieldFile(file: $file, fieldMetadataId: $fieldMetadataId) { id } }\",\"variables\":{\"file\":null,\"fieldMetadataId\":\"{{ $env.DOCUSIGN_PULL_SIGNED_CONTRACT_FIELD_ID }}\"}}"
+              "value": "={\"query\":\"mutation UploadContractFile($file: Upload!, $fieldMetadataId: String!) { uploadFilesFieldFile(file: $file, fieldMetadataId: $fieldMetadataId) { id } }\",\"variables\":{\"file\":null,\"fieldMetadataId\":\"{{ $('DocuSign Config').item.json.twentyPullSignedContractFieldId }}\"}}"
             },
             {
               "parameterType": "formData",
@@ -172,7 +354,10 @@
       "name": "Upload PDF to Twenty (Pull field)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1680, 160],
+      "position": [
+        2160,
+        160
+      ],
       "onError": "continueErrorOutput"
     },
     {
@@ -182,8 +367,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.TWENTY_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -195,7 +386,10 @@
       "name": "Fetch Existing Person Contracts",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1920, 160],
+      "position": [
+        2400,
+        160
+      ],
       "onError": "continueErrorOutput"
     },
     {
@@ -205,8 +399,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.TWENTY_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -218,7 +418,10 @@
       "name": "Update Pull + Person",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2160, 160],
+      "position": [
+        2640,
+        160
+      ],
       "onError": "continueErrorOutput"
     },
     {
@@ -232,9 +435,15 @@
       "name": "Notify Team - No Auto Match",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1680, 400],
+      "position": [
+        2160,
+        400
+      ],
       "credentials": {
-        "gmailOAuth2": { "id": "REPLACE_WITH_CREDENTIAL_ID", "name": "Gmail — Division PR" }
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Gmail \u00e2\u20ac\u201d Division PR"
+        }
       }
     },
     {
@@ -248,91 +457,254 @@
       "name": "Notify Team - Download Failed",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1200, 560],
+      "position": [
+        1680,
+        560
+      ],
       "credentials": {
-        "gmailOAuth2": { "id": "REPLACE_WITH_CREDENTIAL_ID", "name": "Gmail — Division PR" }
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Gmail \u00e2\u20ac\u201d Division PR"
+        }
       }
     },
     {
       "parameters": {
         "sendTo": "={{ $env.OWNER_EMAIL }}",
         "subject": "=DocuSign contract processing failed",
-        "message": "=A step in the DocuSign contract-attach automation (AUTO-12) failed after the envelope's completion was acknowledged.\\n\\nEnvelope ID: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeId }}\\nSigner email: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeSummary.recipients.signers[0].email }}\\nFailed step: {{ $json.error?.node?.name ?? 'unknown' }}\\nError: {{ $json.error?.message ?? JSON.stringify($json) }}\\n\\nIf a PDF was already uploaded to Twenty before this failure, it may be orphaned (uploaded but not linked to any Pull/Person) — check Twenty and attach it manually if so.",
+        "message": "=A step in the DocuSign contract-attach automation (AUTO-12) failed after the envelope's completion was acknowledged.\\n\\nEnvelope ID: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeId }}\\nSigner email: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeSummary.recipients.signers[0].email }}\\nFailed step: {{ $json.error?.node?.name ?? 'unknown' }}\\nError: {{ $json.error?.message ?? JSON.stringify($json) }}\\n\\nIf a PDF was already uploaded to Twenty before this failure, it may be orphaned (uploaded but not linked to any Pull/Person) \u00e2\u20ac\u201d check Twenty and attach it manually if so.",
         "options": {}
       },
       "id": "8888888a-8888-4888-8888-888888888815",
       "name": "Notify Team - Processing Failed",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [1920, 400],
+      "position": [
+        2400,
+        400
+      ],
       "credentials": {
-        "gmailOAuth2": { "id": "REPLACE_WITH_CREDENTIAL_ID", "name": "Gmail — Division PR" }
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_CREDENTIAL_ID",
+          "name": "Gmail \u00e2\u20ac\u201d Division PR"
+        }
       }
     },
     {
       "parameters": {
-        "content": "## AUTO-12\n\nTriggered by DocuSign Connect on envelope completion. Register this workflow's Production Webhook URL as a DocuSign Connect configuration (Admin → Connect → Add Configuration), event: Envelope Completed.\n\nReps still send contracts manually via the DocuSign website — this workflow only handles the completion side.\n\nMatches signer email to open Pulls (VISITED/OUT/DUE_SOON/OVERDUE). Exactly one match → auto-attach PDF to Pull.signedContract + Person.contracts and set Pull.contractSigned. Zero or multiple matches → email OWNER_EMAIL for manual resolution.\n\nHMAC verification uses DocuSign's standard documented Connect scheme (X-DocuSign-Signature-1, HMAC-SHA256/base64 over raw body) — not yet verified against a live DocuSign account's actual payload; revisit if real Connect payloads differ.\n\nAll Twenty/DocuSign HTTP nodes after signature verification use onError: continueErrorOutput, routed to \"Notify Team - Processing Failed\" so no failure is silent. The 200 ack to DocuSign fires immediately after signature verification (before processing completes) since DocuSign expects a fast response — processing failures are caught and reported via email instead of via the HTTP response.\n\nRequires env vars: DOCUSIGN_API_KEY, DOCUSIGN_ACCOUNT_ID, DOCUSIGN_BASE_URL, DOCUSIGN_WEBHOOK_SECRET, DOCUSIGN_PULL_SIGNED_CONTRACT_FIELD_ID (Pull.signedContract field metadata ID from Twenty, needed for the multipart file upload — fetch once via the metadata API after running create-docusign-fields.py).",
-        "height": 340,
-        "width": 400
+        "content": "## AUTO-12\n\nTriggered by DocuSign Connect on envelope completion. Register this workflow's Production Webhook URL as a DocuSign Connect configuration (Admin \u00e2\u2020\u2019 Connect \u00e2\u2020\u2019 Add Configuration), event: Envelope Completed.\n\nReps still send contracts manually via the DocuSign website \u00e2\u20ac\u201d this workflow only handles the completion side.\n\nMatches signer email to open Pulls (VISITED/OUT/DUE_SOON/OVERDUE). Exactly one match \u00e2\u2020\u2019 auto-attach PDF to Pull.signedContract + Person.contracts and set Pull.contractSigned. Zero or multiple matches \u00e2\u2020\u2019 email OWNER_EMAIL for manual resolution.\n\nHMAC verification uses DocuSign's standard documented Connect scheme (X-DocuSign-Signature-1, HMAC-SHA256/base64 over raw body) \u00e2\u20ac\u201d not yet verified against a live DocuSign account's actual payload; revisit if real Connect payloads differ.\n\nAll Twenty/DocuSign HTTP nodes after signature verification use onError: continueErrorOutput, routed to \"Notify Team - Processing Failed\" so no failure is silent. The 200 ack to DocuSign fires immediately after signature verification (before processing completes) since DocuSign expects a fast response \u00e2\u20ac\u201d processing failures are caught and reported via email instead of via the HTTP response.\n\n**No $env access on this n8n plan** \u00e2\u20ac\u201d credentials are hardcoded in two places instead: the \"DocuSign Config\" Set node (Client ID, User ID, Account ID, base URL, RSA private key, webhook secret, Twenty field metadata ID) and inline in \"Compute Expected Signature\"'s code (webhook secret, needed before Config exists). BEFORE ACTIVATING: fill in every PASTE_*_HERE placeholder in both. DocuSign auth uses JWT Grant (RSA keypair + one-time consent, already completed) \u00e2\u20ac\u201d \"Mint DocuSign JWT\" signs a fresh assertion every run, \"Exchange JWT for Access Token\" trades it for a ~1hr bearer token, no manual token renewal ever needed. Treat this workflow's exported JSON as a secret \u00e2\u20ac\u201d it will contain live credentials once filled in; do not commit a filled-in copy to git.",
+        "height": 420,
+        "width": 420
       },
       "id": "8888888a-8888-4888-8888-888888888814",
       "name": "Sticky Note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [-20, 40]
+      "position": [
+        -20,
+        40
+      ]
     }
   ],
   "connections": {
     "DocuSign Connect Webhook": {
-      "main": [[{ "node": "Compute Expected Signature", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Compute Expected Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Compute Expected Signature": {
-      "main": [[{ "node": "Verify Signature", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Verify Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Verify Signature": {
       "main": [
-        [{ "node": "Ack Response", "type": "main", "index": 0 }, { "node": "Fetch Combined PDF", "type": "main", "index": 0 }],
-        [{ "node": "Unauthorized Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Ack Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "DocuSign Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unauthorized Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DocuSign Config": {
+      "main": [
+        [
+          {
+            "node": "Mint DocuSign JWT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mint DocuSign JWT": {
+      "main": [
+        [
+          {
+            "node": "Exchange JWT for Access Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exchange JWT for Access Token": {
+      "main": [
+        [
+          {
+            "node": "Fetch Combined PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Team - Processing Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Fetch Combined PDF": {
       "main": [
-        [{ "node": "Find Open Pulls By Signer Email", "type": "main", "index": 0 }],
-        [{ "node": "Notify Team - Download Failed", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Find Open Pulls By Signer Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Team - Download Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Find Open Pulls By Signer Email": {
       "main": [
-        [{ "node": "Exactly One Open Pull?", "type": "main", "index": 0 }],
-        [{ "node": "Notify Team - Processing Failed", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Exactly One Open Pull?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Team - Processing Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Exactly One Open Pull?": {
       "main": [
-        [{ "node": "Upload PDF to Twenty (Pull field)", "type": "main", "index": 0 }],
-        [{ "node": "Notify Team - No Auto Match", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Upload PDF to Twenty (Pull field)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Team - No Auto Match",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Upload PDF to Twenty (Pull field)": {
       "main": [
-        [{ "node": "Fetch Existing Person Contracts", "type": "main", "index": 0 }],
-        [{ "node": "Notify Team - Processing Failed", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Fetch Existing Person Contracts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Team - Processing Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Fetch Existing Person Contracts": {
       "main": [
-        [{ "node": "Update Pull + Person", "type": "main", "index": 0 }],
-        [{ "node": "Notify Team - Processing Failed", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Update Pull + Person",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Team - Processing Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Update Pull + Person": {
       "main": [
         [],
-        [{ "node": "Notify Team - Processing Failed", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Notify Team - Processing Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
   "active": false,
-  "settings": { "executionOrder": "v1" },
-  "tags": [{ "name": "division-pr" }, { "name": "docusign" }]
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "division-pr"
+    },
+    {
+      "name": "docusign"
+    }
+  ]
 }
