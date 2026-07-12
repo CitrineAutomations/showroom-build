@@ -1,0 +1,338 @@
+{
+  "name": "AUTO-12 DocuSign Contract Signed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "docusign-envelope-completed",
+        "responseMode": "responseNode",
+        "options": { "rawBody": true }
+      },
+      "id": "88888888-8888-4888-8888-888888888801",
+      "name": "DocuSign Connect Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 400],
+      "webhookId": "88888888-8888-4888-8888-888888888801"
+    },
+    {
+      "parameters": {
+        "jsCode": "// DocuSign Connect HMAC verification (HMAC-SHA256, base64), per DocuSign Connect docs:\n// https://developers.docusign.com/platform/webhooks/connect/#hmac-message-signature-verification\n// Requires the webhook trigger's 'rawBody' option enabled so the exact bytes DocuSign signed are available.\nconst crypto = require('crypto')\n\nconst item = $input.first().json\nconst rawBody = item.rawBody\nconst signatureHeader = item.headers['x-docusign-signature-1']\nconst secret = $env.DOCUSIGN_WEBHOOK_SECRET\n\nconst valid = !!rawBody && !!signatureHeader && (() => {\n  const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('base64')\n  const a = Buffer.from(expected)\n  const b = Buffer.from(signatureHeader)\n  return a.length === b.length && crypto.timingSafeEqual(a, b)\n})()\n\nreturn [{ json: { ...item, signatureValid: valid } }]"
+      },
+      "id": "88888888-8888-4888-8888-888888888802",
+      "name": "Compute Expected Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "sig-valid",
+              "leftValue": "={{ $json.signatureValid }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "88888888-8888-4888-8888-888888888803",
+      "name": "Verify Signature",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"error\": \"Unauthorized\" }",
+        "options": { "responseCode": 401 }
+      },
+      "id": "88888888-8888-4888-8888-888888888804",
+      "name": "Unauthorized Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 620]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"success\": true }",
+        "options": { "responseCode": 200 }
+      },
+      "id": "88888888-8888-4888-8888-888888888805",
+      "name": "Ack Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 260]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.DOCUSIGN_BASE_URL }}/restapi/v2.1/accounts/{{ $env.DOCUSIGN_ACCOUNT_ID }}/envelopes/{{ $json.body.data.envelopeId }}/documents/combined",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.DOCUSIGN_API_KEY }}" }
+          ]
+        },
+        "options": { "response": { "response": { "responseFormat": "file", "neverError": false } } }
+      },
+      "id": "88888888-8888-4888-8888-888888888806",
+      "name": "Fetch Combined PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 260],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"query FindOpenPullsByEmail($email: String!) { pulls(filter: { stage: { in: [VISITED, OUT, DUE_SOON, OVERDUE] }, clientId: { emails: { primaryEmail: { eq: $email } } } }) { edges { node { id name clientId { id } } } } }\",\n  \"variables\": { \"email\": \"{{ $('DocuSign Connect Webhook').item.json.body.data.envelopeSummary.recipients.signers[0].email }}\" }\n}",
+        "options": {}
+      },
+      "id": "88888888-8888-4888-8888-888888888807",
+      "name": "Find Open Pulls By Signer Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 260],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "single-match",
+              "leftValue": "={{ $json.data.pulls.edges.length }}",
+              "rightValue": 1,
+              "operator": { "type": "number", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "88888888-8888-4888-8888-888888888808",
+      "name": "Exactly One Open Pull?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1440, 260]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/metadata",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formData",
+              "name": "operations",
+              "value": "={\"query\":\"mutation UploadContractFile($file: Upload!, $fieldMetadataId: String!) { uploadFilesFieldFile(file: $file, fieldMetadataId: $fieldMetadataId) { id } }\",\"variables\":{\"file\":null,\"fieldMetadataId\":\"{{ $env.DOCUSIGN_PULL_SIGNED_CONTRACT_FIELD_ID }}\"}}"
+            },
+            {
+              "parameterType": "formData",
+              "name": "map",
+              "value": "={\"0\":[\"variables.file\"]}"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "0",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "88888888-8888-4888-8888-888888888809",
+      "name": "Upload PDF to Twenty (Pull field)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1680, 160],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"query ExistingContracts($id: ID!) { person(filter: { id: { eq: $id } }) { contracts { fileId } } }\",\n  \"variables\": { \"id\": \"{{ $('Find Open Pulls By Signer Email').item.json.data.pulls.edges[0].node.clientId.id }}\" }\n}",
+        "options": {}
+      },
+      "id": "8888888a-8888-4888-8888-888888888810",
+      "name": "Fetch Existing Person Contracts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1920, 160],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.TWENTY_API_URL.replace(/\\/$/, '') }}/graphql",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.TWENTY_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query\": \"mutation AttachContract($pullId: ID!, $personId: ID!, $pullInput: PullUpdateInput!, $personInput: PersonUpdateInput!) { updatePull(id: $pullId, data: $pullInput) { id contractSigned } updatePerson(id: $personId, data: $personInput) { id } }\",\n  \"variables\": {\n    \"pullId\": \"{{ $('Find Open Pulls By Signer Email').item.json.data.pulls.edges[0].node.id }}\",\n    \"personId\": \"{{ $('Find Open Pulls By Signer Email').item.json.data.pulls.edges[0].node.clientId.id }}\",\n    \"pullInput\": {\n      \"contractSigned\": true,\n      \"signedContract\": [ { \"fileId\": \"{{ $('Upload PDF to Twenty (Pull field)').item.json.data.uploadFilesFieldFile.id }}\", \"label\": \"Signed Contract\" } ]\n    },\n    \"personInput\": {\n      \"contracts\": {{ JSON.stringify([...(($('Fetch Existing Person Contracts').item.json.data.person ?? {}).contracts ?? []).map(c => ({ fileId: c.fileId, label: 'Contract' })), { fileId: $('Upload PDF to Twenty (Pull field)').item.json.data.uploadFilesFieldFile.id, label: 'Contract' }]) }}\n    }\n  }\n}",
+        "options": {}
+      },
+      "id": "8888888a-8888-4888-8888-888888888811",
+      "name": "Update Pull + Person",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2160, 160],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.OWNER_EMAIL }}",
+        "subject": "=DocuSign contract could not be auto-matched",
+        "message": "=A DocuSign envelope was completed but could not be automatically attached to a Pull.\\n\\nSigner email: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeSummary.recipients.signers[0].email }}\\nEnvelope ID: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeId }}\\nMatching open pulls found: {{ $('Find Open Pulls By Signer Email').item.json.data.pulls.edges.length }}\\n{{ $('Find Open Pulls By Signer Email').item.json.data.pulls.edges.length > 0 ? 'Candidate Pull IDs: ' + $('Find Open Pulls By Signer Email').item.json.data.pulls.edges.map(e => e.node.id).join(', ') : 'No open pulls matched this email.' }}\\n\\nPlease attach the signed contract to the correct Pull manually.",
+        "options": {}
+      },
+      "id": "8888888a-8888-4888-8888-888888888812",
+      "name": "Notify Team - No Auto Match",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1680, 400],
+      "credentials": {
+        "gmailOAuth2": { "id": "REPLACE_WITH_CREDENTIAL_ID", "name": "Gmail — Division PR" }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.OWNER_EMAIL }}",
+        "subject": "=DocuSign contract PDF download failed",
+        "message": "=Failed to download the completed PDF for a signed DocuSign envelope.\\n\\nEnvelope ID: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeId }}\\nSigner email: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeSummary.recipients.signers[0].email }}\\nHTTP status: {{ $json.error?.statusCode ?? $json.statusCode ?? 'unknown' }}\\n\\nPlease check DocuSign directly and attach the contract manually.",
+        "options": {}
+      },
+      "id": "8888888a-8888-4888-8888-888888888813",
+      "name": "Notify Team - Download Failed",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1200, 560],
+      "credentials": {
+        "gmailOAuth2": { "id": "REPLACE_WITH_CREDENTIAL_ID", "name": "Gmail — Division PR" }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.OWNER_EMAIL }}",
+        "subject": "=DocuSign contract processing failed",
+        "message": "=A step in the DocuSign contract-attach automation (AUTO-12) failed after the envelope's completion was acknowledged.\\n\\nEnvelope ID: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeId }}\\nSigner email: {{ $('DocuSign Connect Webhook').item.json.body.data.envelopeSummary.recipients.signers[0].email }}\\nFailed step: {{ $json.error?.node?.name ?? 'unknown' }}\\nError: {{ $json.error?.message ?? JSON.stringify($json) }}\\n\\nIf a PDF was already uploaded to Twenty before this failure, it may be orphaned (uploaded but not linked to any Pull/Person) — check Twenty and attach it manually if so.",
+        "options": {}
+      },
+      "id": "8888888a-8888-4888-8888-888888888815",
+      "name": "Notify Team - Processing Failed",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1920, 400],
+      "credentials": {
+        "gmailOAuth2": { "id": "REPLACE_WITH_CREDENTIAL_ID", "name": "Gmail — Division PR" }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## AUTO-12\n\nTriggered by DocuSign Connect on envelope completion. Register this workflow's Production Webhook URL as a DocuSign Connect configuration (Admin → Connect → Add Configuration), event: Envelope Completed.\n\nReps still send contracts manually via the DocuSign website — this workflow only handles the completion side.\n\nMatches signer email to open Pulls (VISITED/OUT/DUE_SOON/OVERDUE). Exactly one match → auto-attach PDF to Pull.signedContract + Person.contracts and set Pull.contractSigned. Zero or multiple matches → email OWNER_EMAIL for manual resolution.\n\nHMAC verification uses DocuSign's standard documented Connect scheme (X-DocuSign-Signature-1, HMAC-SHA256/base64 over raw body) — not yet verified against a live DocuSign account's actual payload; revisit if real Connect payloads differ.\n\nAll Twenty/DocuSign HTTP nodes after signature verification use onError: continueErrorOutput, routed to \"Notify Team - Processing Failed\" so no failure is silent. The 200 ack to DocuSign fires immediately after signature verification (before processing completes) since DocuSign expects a fast response — processing failures are caught and reported via email instead of via the HTTP response.\n\nRequires env vars: DOCUSIGN_API_KEY, DOCUSIGN_ACCOUNT_ID, DOCUSIGN_BASE_URL, DOCUSIGN_WEBHOOK_SECRET, DOCUSIGN_PULL_SIGNED_CONTRACT_FIELD_ID (Pull.signedContract field metadata ID from Twenty, needed for the multipart file upload — fetch once via the metadata API after running create-docusign-fields.py).",
+        "height": 340,
+        "width": 400
+      },
+      "id": "8888888a-8888-4888-8888-888888888814",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-20, 40]
+    }
+  ],
+  "connections": {
+    "DocuSign Connect Webhook": {
+      "main": [[{ "node": "Compute Expected Signature", "type": "main", "index": 0 }]]
+    },
+    "Compute Expected Signature": {
+      "main": [[{ "node": "Verify Signature", "type": "main", "index": 0 }]]
+    },
+    "Verify Signature": {
+      "main": [
+        [{ "node": "Ack Response", "type": "main", "index": 0 }, { "node": "Fetch Combined PDF", "type": "main", "index": 0 }],
+        [{ "node": "Unauthorized Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Combined PDF": {
+      "main": [
+        [{ "node": "Find Open Pulls By Signer Email", "type": "main", "index": 0 }],
+        [{ "node": "Notify Team - Download Failed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Find Open Pulls By Signer Email": {
+      "main": [
+        [{ "node": "Exactly One Open Pull?", "type": "main", "index": 0 }],
+        [{ "node": "Notify Team - Processing Failed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Exactly One Open Pull?": {
+      "main": [
+        [{ "node": "Upload PDF to Twenty (Pull field)", "type": "main", "index": 0 }],
+        [{ "node": "Notify Team - No Auto Match", "type": "main", "index": 0 }]
+      ]
+    },
+    "Upload PDF to Twenty (Pull field)": {
+      "main": [
+        [{ "node": "Fetch Existing Person Contracts", "type": "main", "index": 0 }],
+        [{ "node": "Notify Team - Processing Failed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Existing Person Contracts": {
+      "main": [
+        [{ "node": "Update Pull + Person", "type": "main", "index": 0 }],
+        [{ "node": "Notify Team - Processing Failed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Update Pull + Person": {
+      "main": [
+        [],
+        [{ "node": "Notify Team - Processing Failed", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "division-pr" }, { "name": "docusign" }]
+}

@@ -18,6 +18,7 @@ Source spec: [`index.html`](../index.html) section 06 (Automations) and object m
 | AUTO-08 | `workflows/AUTO-08-reliability-score.json` | Twenty webhook: pull stage → Closed | Recalculate contact reliability score (1–10) |
 | AUTO-09 | `workflows/AUTO-09-drive-inventory-watcher.json` | Google Drive: file created/updated | Parse filename → Google Sheet row → Twenty inventory record |
 | AUTO-11 | `workflows/AUTO-11-portal-account.json` | Webhook from onboarding app | Create Clerk user, link `twentyContactId` in metadata |
+| AUTO-12 | `workflows/AUTO-12-docusign-contract-signed.json` | DocuSign Connect: envelope completed | Download signed PDF, match signer email to an open Pull, attach to `Pull.signedContract` + `Person.contracts`, set `contractSigned`. Ambiguous match → email owner |
 
 ## Prerequisites
 
@@ -45,8 +46,13 @@ Copy [`.env.example`](./.env.example) values into n8n **Settings → Variables**
 | `GOOGLE_CALENDAR_ID` | AUTO-01, 03, 04, 07 |
 | `GOOGLE_DRIVE_INVENTORY_FOLDER_ID` | AUTO-09 |
 | `GOOGLE_SHEETS_INVENTORY_ID` | AUTO-09 |
-| `OWNER_EMAIL` | AUTO-06 escalation |
+| `OWNER_EMAIL` | AUTO-06 escalation, AUTO-12 fallback notification |
 | `CLERK_SECRET_KEY` | AUTO-11 |
+| `DOCUSIGN_API_KEY` | AUTO-12 |
+| `DOCUSIGN_ACCOUNT_ID` | AUTO-12 |
+| `DOCUSIGN_BASE_URL` | AUTO-12 (account-specific DocuSign REST base URL, e.g. `https://na1.docusign.net`) |
+| `DOCUSIGN_WEBHOOK_SECRET` | AUTO-12 (DocuSign Connect HMAC key) |
+| `DOCUSIGN_PULL_SIGNED_CONTRACT_FIELD_ID` | AUTO-12 (Pull.signedContract field metadata ID, for multipart file upload) |
 
 ### 2. Import workflows
 
@@ -75,7 +81,17 @@ Copy each workflow's **Production Webhook URL** from the Webhook trigger node.
 
 > Custom object webhook names depend on your Twenty workspace API names. Check **Settings → Data Model** for exact singular names (e.g. `pull` vs `pulls`).
 
-### 4. Wire onboarding → AUTO-11
+### 4. Register DocuSign Connect webhook (AUTO-12)
+
+DocuSign Connect webhooks are configured in DocuSign, not Twenty. In DocuSign Admin → Connect → Add Configuration:
+
+- Event: **Envelope Completed**
+- URL: AUTO-12's Production Webhook URL
+- Enable HMAC signing with a secret matching `DOCUSIGN_WEBHOOK_SECRET`
+
+Run `infra/twenty/create-docusign-fields.py` first to create `Pull.signedContract` and `Person.contracts`, then look up `Pull.signedContract`'s field metadata ID via Twenty's `/metadata` API and set `DOCUSIGN_PULL_SIGNED_CONTRACT_FIELD_ID`.
+
+### 5. Wire onboarding → AUTO-11
 
 When the onboarding app finishes, POST to the AUTO-11 webhook:
 
@@ -114,6 +130,9 @@ GraphQL queries: [`shared/twenty-queries.graphql`](./shared/twenty-queries.graph
 - [ ] AUTO-07: Set pull to Returned → items Available, Calendar event deleted
 - [ ] AUTO-01: Confirm appointment → client email + Calendar + reminder scheduled
 - [ ] AUTO-09: Upload `Designer_Type_Color_SS_2024_001.jpg` to Drive → Sheet row + CRM record
+- [ ] AUTO-12: Complete a DocuSign envelope for a signer email matching exactly one open Pull → PDF attached to `Pull.signedContract` and `Person.contracts`, `contractSigned` set
+- [ ] AUTO-12: Complete an envelope for an email matching zero/multiple open Pulls → no Twenty writes, `OWNER_EMAIL` notified
+- [ ] AUTO-12: POST to the webhook with a missing/invalid signature → 401, no processing
 
 ## Execution budget
 
