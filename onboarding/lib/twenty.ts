@@ -574,11 +574,17 @@ function designerInitials(designer: string): string {
   return initials || 'XX'
 }
 
+export interface PriceInput {
+  amountMicros: number
+  currencyCode: string
+}
+
 export async function createInventoryItem(
   designer: string,
   color: string,
   itemTypeLabel: string,
   sequence: number,
+  price: PriceInput,
   fileIds: string[] = [],
 ): Promise<{ id: string; itemId: string }> {
   const { seasonEnum, seasonCode } = currentSeasonCode()
@@ -600,10 +606,19 @@ export async function createInventoryItem(
       itemType,
       season: seasonEnum,
       status: 'OUT',
+      price,
       ...(fileIds.length ? { itemImages: fileIds.map(fileId => ({ fileId, label: 'Photo' })) } : {}),
     },
   })
   return { ...data.createInventoryItem, itemId }
+}
+
+export async function updateInventoryItemPrice(inventoryItemId: string, price: PriceInput): Promise<void> {
+  await gql(`
+    mutation UpdateInventoryItemPrice($id: ID!, $input: InventoryItemUpdateInput!) {
+      updateInventoryItem(id: $id, data: $input) { id }
+    }
+  `, { id: inventoryItemId, input: { price } })
 }
 
 export async function deleteInventoryItem(inventoryItemId: string): Promise<void> {
@@ -732,6 +747,7 @@ export interface InventoryItemSearchResult {
   color: string
   itemType: string
   status: string
+  price: PriceInput | null
   lastRentedAt: string | null
   lastOutcome: string | null
 }
@@ -743,6 +759,7 @@ export async function searchInventoryItems(query: string): Promise<InventoryItem
     color: string
     itemType: string
     status: string
+    price: PriceInput | null
     pullItemLoans: { edges: { node: { createdAt: string; outcome: string | null } }[] }
   } }[] } }>(`
     query SearchInventoryItems($filter: InventoryItemFilterInput!) {
@@ -750,6 +767,7 @@ export async function searchInventoryItems(query: string): Promise<InventoryItem
         edges {
           node {
             id designer color itemType status
+            price { amountMicros currencyCode }
             pullItemLoans(first: 1, orderBy: { createdAt: DescNullsLast }) {
               edges { node { createdAt outcome } }
             }
@@ -779,6 +797,7 @@ export async function searchInventoryItems(query: string): Promise<InventoryItem
       color: e.node.color,
       itemType: e.node.itemType,
       status: e.node.status,
+      price: e.node.price,
       lastRentedAt: latest?.createdAt ?? null,
       lastOutcome: latest?.outcome ?? null,
     }

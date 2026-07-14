@@ -23,6 +23,7 @@ interface SearchResult {
   color: string
   itemType: string | null
   status: string
+  price: { amountMicros: number; currencyCode: string } | null
   lastRentedAt: string | null
   lastOutcome: string | null
 }
@@ -38,9 +39,11 @@ interface ItemCard {
   color: string
   itemType: string
   itemTypeOther: boolean
+  price: string
+  priceChanged: boolean
   conditionNotes: string
   photos: PhotoItem[]
-  errors: { designer?: string; color?: string; itemType?: string }
+  errors: { designer?: string; color?: string; itemType?: string; price?: string }
 }
 
 const FALLBACK_ITEM_TYPES = [
@@ -74,10 +77,16 @@ function emptyCard(): ItemCard {
     color: '',
     itemType: '',
     itemTypeOther: false,
+    price: '',
+    priceChanged: false,
     conditionNotes: '',
     photos: [],
     errors: {},
   }
+}
+
+function microsToDollarInput(amountMicros: number): string {
+  return (amountMicros / 1_000_000).toString()
 }
 
 function formatLastRented(item: SearchResult): string {
@@ -153,15 +162,21 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
   }
 
   function selectItem(localId: string, item: SearchResult) {
-    patchCard(localId, { selectedItem: item, searchResults: [] })
+    patchCard(localId, {
+      selectedItem: item,
+      searchResults: [],
+      price: item.price ? microsToDollarInput(item.price.amountMicros) : '',
+      priceChanged: false,
+      errors: {},
+    })
   }
 
   function switchToCreateNew(localId: string) {
-    patchCard(localId, { mode: 'new', selectedItem: null, searchResults: [] })
+    patchCard(localId, { mode: 'new', selectedItem: null, searchResults: [], price: '', priceChanged: false })
   }
 
   function switchToSearch(localId: string) {
-    patchCard(localId, { mode: 'existing', selectedItem: null, designer: '', color: '', itemType: '', itemTypeOther: false, errors: {} })
+    patchCard(localId, { mode: 'existing', selectedItem: null, designer: '', color: '', itemType: '', itemTypeOther: false, price: '', priceChanged: false, errors: {} })
   }
 
   async function uploadFileOnce(file: File, target: string): Promise<string | null> {
@@ -232,20 +247,36 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
     return !!card.designer.trim() && !!card.color.trim() && !!card.itemType.trim()
   }
 
+  function priceAmountMicros(price: string): number {
+    return Math.round(Number(price) * 1_000_000)
+  }
+
   const hasAtLeastOneItem = cards.some(isCardFilled)
   const atMaxItems = cards.length >= MAX_ITEMS
+
+  function isPriceValid(price: string): boolean {
+    if (!price.trim()) return false
+    const n = Number(price)
+    return Number.isFinite(n) && n >= 0
+  }
 
   function validate(): boolean {
     let valid = true
     const next = cardsRef.current.map(card => {
       if (card.mode === 'existing') {
+        const errors: ItemCard['errors'] = {}
         if (!card.selectedItem) valid = false
-        return card
+        if (card.selectedItem && !isPriceValid(card.price)) {
+          errors.price = 'Price is required.'
+          valid = false
+        }
+        return { ...card, errors }
       }
       const errors: ItemCard['errors'] = {}
       if (!card.designer.trim()) errors.designer = 'Designer is required.'
       if (!card.color.trim()) errors.color = 'Color is required.'
       if (!card.itemType.trim()) errors.itemType = 'Item type is required.'
+      if (!isPriceValid(card.price)) errors.price = 'Price is required.'
       if (Object.keys(errors).length > 0) valid = false
       return { ...card, errors }
     })
@@ -272,6 +303,8 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
           return {
             mode: 'existing' as const,
             inventoryItemId: card.selectedItem.id,
+            priceAmountMicros: priceAmountMicros(card.price),
+            priceChanged: card.priceChanged,
             conditionNotes: card.conditionNotes.trim() || undefined,
             loanFileIds,
             itemFileIds,
@@ -282,6 +315,7 @@ export default function Step4cItemEntry({ pullId, onComplete, onBack }: Props) {
           designer: card.designer.trim(),
           color: card.color.trim(),
           itemType: card.itemType.trim(),
+          priceAmountMicros: priceAmountMicros(card.price),
           conditionNotes: card.conditionNotes.trim() || undefined,
           loanFileIds,
           itemFileIds,
@@ -493,6 +527,22 @@ function ItemCardEditor({
               Change
             </button>
           </div>
+
+          <div>
+            <label className="field-label">Price</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={card.price}
+              onChange={e => onChange({ price: e.target.value, priceChanged: true, errors: { ...card.errors, price: undefined } })}
+              className={`field-input${card.errors.price ? ' error' : ''}`}
+              aria-invalid={!!card.errors.price}
+              placeholder={card.selectedItem.price ? undefined : 'Not set — enter a price'}
+            />
+            {card.errors.price && <p className="field-error" role="alert">{card.errors.price}</p>}
+          </div>
         </div>
       )}
 
@@ -570,6 +620,21 @@ function ItemCardEditor({
               </>
             )}
             {card.errors.itemType && <p className="field-error" role="alert">{card.errors.itemType}</p>}
+          </div>
+
+          <div>
+            <label className="field-label">Price</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              value={card.price}
+              onChange={e => onChange({ price: e.target.value, errors: { ...card.errors, price: undefined } })}
+              className={`field-input${card.errors.price ? ' error' : ''}`}
+              aria-invalid={!!card.errors.price}
+            />
+            {card.errors.price && <p className="field-error" role="alert">{card.errors.price}</p>}
           </div>
         </div>
       )}

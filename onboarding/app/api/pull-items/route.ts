@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier, getInventoryItemStatus, markInventoryItemOut, reconcileInventoryItemStatus } from '@/lib/twenty'
+import { addInventoryItemImagesIfMissing, createInventoryItem, createPullItemLoan, deleteInventoryItem, getInventoryItemIdentifier, getInventoryItemStatus, markInventoryItemOut, reconcileInventoryItemStatus, updateInventoryItemPrice, type PriceInput } from '@/lib/twenty'
 
 const MAX_ITEMS = 20
+const CURRENCY_CODE = 'USD'
 
 interface NewItemInput {
   mode: 'new'
   designer: string
   color: string
   itemType: string
+  priceAmountMicros: number
   conditionNotes?: string
   loanFileIds: string[]
   itemFileIds: string[]
@@ -16,6 +18,8 @@ interface NewItemInput {
 interface ExistingItemInput {
   mode: 'existing'
   inventoryItemId: string
+  priceAmountMicros: number
+  priceChanged: boolean
   conditionNotes?: string
   loanFileIds: string[]
   itemFileIds: string[]
@@ -23,16 +27,25 @@ interface ExistingItemInput {
 
 type ItemInput = NewItemInput | ExistingItemInput
 
+function isValidPriceAmountMicros(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
 function isValidItem(item: Partial<ItemInput>): boolean {
   if (item.mode === 'existing') {
-    return typeof item.inventoryItemId === 'string' && item.inventoryItemId.trim().length > 0
+    return (
+      typeof item.inventoryItemId === 'string' && item.inventoryItemId.trim().length > 0 &&
+      isValidPriceAmountMicros(item.priceAmountMicros) &&
+      typeof item.priceChanged === 'boolean'
+    )
   }
   if (item.mode === 'new') {
     const n = item as Partial<NewItemInput>
     return (
       typeof n.designer === 'string' && n.designer.trim().length > 0 &&
       typeof n.color === 'string' && n.color.trim().length > 0 &&
-      typeof n.itemType === 'string' && n.itemType.trim().length > 0
+      typeof n.itemType === 'string' && n.itemType.trim().length > 0 &&
+      isValidPriceAmountMicros(n.priceAmountMicros)
     )
   }
   return false
@@ -66,7 +79,8 @@ export async function POST(req: NextRequest) {
         let inventoryItemId: string
         let itemIdentifier: string
         if (item.mode === 'new') {
-          const created = await createInventoryItem(item.designer, item.color, item.itemType, i + 1, itemFileIds)
+          const price: PriceInput = { amountMicros: item.priceAmountMicros, currencyCode: CURRENCY_CODE }
+          const created = await createInventoryItem(item.designer, item.color, item.itemType, i + 1, price, itemFileIds)
           inventoryItemId = created.id
           itemIdentifier = created.itemId
           createdNewInventoryItemId = created.id
@@ -78,6 +92,9 @@ export async function POST(req: NextRequest) {
           }
           itemIdentifier = await getInventoryItemIdentifier(inventoryItemId)
           await addInventoryItemImagesIfMissing(inventoryItemId, itemFileIds)
+          if (item.priceChanged) {
+            await updateInventoryItemPrice(inventoryItemId, { amountMicros: item.priceAmountMicros, currencyCode: CURRENCY_CODE })
+          }
         }
         // Create the loan before flipping status: the loan is the source of truth for
         // "is this item checked out", so if loan creation fails there's nothing to roll
